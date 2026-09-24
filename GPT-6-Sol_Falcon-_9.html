@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>FALCON 9 | Starlink ascent simulation</title>
+<!-- Visual browser verification was unavailable: the available browser tool blocks local file:// pages. Static syntax and headless physics checks were used instead. -->
+<style>
+  :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#f3f6fa;background:#020712}
+  *{box-sizing:border-box} html,body{margin:0;width:100%;height:100%;overflow:hidden}
+  #view{position:fixed;inset:0;display:block;width:100%;height:100%;touch-action:none}
+  .veil{position:fixed;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(1,7,17,.72),transparent 36%,transparent 72%,rgba(1,7,17,.35)),linear-gradient(0deg,rgba(1,7,17,.7),transparent 27%);z-index:1}
+  .ui{position:fixed;inset:0;z-index:2;pointer-events:none;padding:clamp(14px,2.2vw,34px);display:flex;flex-direction:column;justify-content:space-between;gap:12px}
+  .top{display:flex;align-items:flex-start;justify-content:space-between;gap:20px}
+  .brand{max-width:min(390px,50vw)} .kicker{font-size:11px;letter-spacing:.3em;color:#8bb8d1;font-weight:800}.brand h1{font-weight:900;letter-spacing:.08em;font-size:clamp(22px,3vw,43px);line-height:1;margin:8px 0 4px}.brand p{color:#aabcc9;font-size:12px;margin:0;letter-spacing:.1em}
+  .met{font-variant-numeric:tabular-nums;text-align:right}.met .tag{font-size:10px;letter-spacing:.26em;color:#90b2c7;font-weight:800}.met strong{display:block;font-size:clamp(23px,3vw,42px);font-weight:600;letter-spacing:.06em}.phase{display:inline-block;margin-top:5px;padding:5px 9px;border:1px solid #7ec9ef80;border-radius:3px;background:#071e34bd;color:#beeaff;font-size:11px;letter-spacing:.16em;font-weight:800;text-transform:uppercase}
+  .bottom{display:grid;grid-template-columns:minmax(205px,270px) minmax(380px,1fr) minmax(210px,260px);gap:clamp(14px,2vw,30px);align-items:end}
+  .panel{background:linear-gradient(135deg,rgba(5,16,29,.86),rgba(4,13,25,.58));border:1px solid rgba(159,206,232,.2);backdrop-filter:blur(12px);box-shadow:0 8px 38px #0005;border-radius:8px;pointer-events:auto}
+  .telemetry{padding:15px 17px}.panel h2{font-size:10px;letter-spacing:.25em;color:#87b7d3;margin:0 0 11px;text-transform:uppercase}.readout{display:flex;justify-content:space-between;gap:12px;border-top:1px solid #b8d3e227;padding:7px 0;font-size:11px;color:#9eb5c5}.readout b{color:#f5fbff;font-size:13px;font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}.readout:first-of-type{border-top:0}.target{font-size:10px;line-height:1.45;color:#b6cbda;margin:10px 0 0}.target b{color:#fff}
+  .center{min-width:0}.timeline{display:flex;align-items:flex-start;justify-content:space-between;gap:2px;padding:16px 17px 14px;position:relative}.timeline:before{content:"";position:absolute;left:22px;right:22px;top:23px;height:1px;background:#88a6b489}.event{position:relative;z-index:1;flex:1;min-width:0;text-align:center}.event i{display:block;width:13px;height:13px;border-radius:50%;margin:0 auto 9px;border:2px solid #6b8898;background:#102234;box-shadow:0 0 0 4px #061321}.event.done i{background:#53b7e9;border-color:#9be5ff}.event.current i{background:#fff;border-color:#fff;box-shadow:0 0 0 4px #2c90bd,0 0 18px #6bd4ff}.event span{font-size:9px;line-height:1.25;letter-spacing:.08em;font-weight:700;color:#8da8b8;display:block}.event.done span,.event.current span{color:#e6f8ff}.event small{display:block;color:#8db4c8;font-size:9px;margin-top:3px;font-variant-numeric:tabular-nums}
+  .missionNote{margin-top:9px;padding:10px 14px;color:#bad2df;font-size:11px;line-height:1.45}.missionNote strong{color:#fff}
+  .controls{padding:14px}.row{display:flex;gap:6px;flex-wrap:wrap}.controls button{pointer-events:auto;background:#153249;color:#ebf8ff;border:1px solid #6f9eb97c;border-radius:4px;padding:8px 10px;font:700 11px/1.1 inherit;letter-spacing:.04em;cursor:pointer;transition:background .2s,transform .2s}.controls button:hover{background:#286082}.controls button:active{transform:translateY(1px)}.controls button:focus-visible{outline:2px solid #b6e9ff;outline-offset:2px}.controls button.primary{background:#dceef5;color:#071a2a;border-color:#fff}.controls button.selected{background:#33749a;border-color:#a9dcfa}.controls button:disabled{opacity:.42;cursor:default}.controls .row+.row{margin-top:9px}.hint{font-size:10px;color:#8aa6b8;line-height:1.4;margin:10px 0 0}
+  #notice{position:fixed;z-index:5;left:50%;top:48%;transform:translate(-50%,-50%);max-width:min(520px,90vw);background:#061423ef;border:1px solid #8fd8ff88;padding:20px 24px;border-radius:8px;box-shadow:0 20px 70px #0009;text-align:center;line-height:1.5;color:#e6f7ff;display:none}#notice.show{display:block}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+  @media(max-width:900px){.bottom{grid-template-columns:1fr 1fr}.center{grid-column:1/-1;grid-row:1}.timeline{overflow-x:auto}.event{min-width:57px}.telemetry,.controls{max-height:30vh;overflow:auto}}
+  @media(max-width:540px){.ui{padding:10px}.brand p{font-size:10px}.bottom{grid-template-columns:1fr 1fr;gap:8px}.telemetry,.controls{padding:9px}.readout{font-size:10px;padding:4px 0}.readout b{font-size:11px}.timeline{padding:10px 8px}.timeline:before{top:17px}.event i{margin-bottom:5px}.event span{font-size:8px}.missionNote{display:none}.controls button{padding:7px 6px;font-size:10px}.hint{display:none}}
+</style>
+</head>
+<body>
+<canvas id="view" aria-label="Three-dimensional Falcon 9 launch simulation; drag to orbit and scroll to zoom"></canvas>
+<div class="veil" aria-hidden="true"></div>
+<main class="ui">
+  <div class="top"><div class="brand"><div class="kicker">ILLUSTRATIVE ASCENT • FLORIDA</div><h1>FALCON 9</h1><p>STARLINK PAYLOAD / TWO-STAGE FLIGHT</p></div><div class="met"><div class="tag">MISSION ELAPSED TIME</div><strong id="clock">T−00:10</strong><div id="phase" class="phase">PRELAUNCH</div></div></div>
+  <div class="bottom">
+    <section class="panel telemetry" aria-label="Flight telemetry"><h2>Live telemetry</h2><div class="readout"><span>Altitude</span><b id="alt">0.0 km</b></div><div class="readout"><span>Inertial speed</span><b id="speed">0 m/s</b></div><div class="readout"><span>Thrust</span><b id="thrust">0 kN</b></div><div class="readout"><span>Dynamic pressure</span><b id="q">0.0 kPa</b></div><div class="readout"><span>Attached mass</span><b id="mass">— t</b></div><div class="readout"><span>Proper acceleration</span><b id="acc">0.00 g</b></div><p class="target" id="orbit">Target: <b>200 × 200 km, prograde</b><br>SECO ends the simulated ascent. Orbit status is calculated from the final state.</p></section>
+    <div class="center"><section id="timeline" class="panel timeline" aria-label="Mission timeline"></section><section class="panel missionNote" id="note"><strong>Ready on the pad.</strong> Ignite, hold for two seconds, then release the clamps.</section></div>
+    <section class="panel controls" aria-label="Simulation controls"><h2>Mission control</h2><div class="row"><button id="launch" class="primary" aria-label="Launch mission">Launch</button><button id="pause" aria-label="Pause or resume mission" disabled>Pause</button><button id="reset" aria-label="Reset or replay mission">Reset</button></div><div class="row" role="group" aria-label="Playback speed"><button data-rate="1" class="selected">1×</button><button data-rate="4">4×</button><button data-rate="10">10×</button></div><div class="row"><button id="cinema" aria-label="Return to cinematic camera">Cinematic view</button><button id="shake" aria-label="Toggle camera shake" aria-pressed="true">Shake: on</button></div><p class="hint">Space: launch / pause · R: reset · 1, 4, 0: speed · C: cinematic · S: shake. Drag the scene to orbit; wheel to zoom.</p></section>
+  </div>
+</main>
+<div id="notice" role="alert"></div>
+<script type="module">
+// Single external dependency. Dynamic import lets a file:// page report CDN errors cleanly.
+let THREE;
+const notice = document.getElementById('notice');
+function fatal(message){notice.textContent=message;notice.classList.add('show');}
+try { THREE = await import('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js'); }
+catch (error) { fatal('Three.js could not load from the CDN. Connect to the internet, then reopen or refresh this HTML file. '+error.message); }
+if (THREE) try { boot(); } catch(error) { console.error(error); fatal('The 3D simulation could not initialize: '+error.message); }
+
+function boot(){
+  'use strict';
+  // CONFIGURATION — Public dimensions and thrust: SpaceX Falcon Payload User's Guide,
+  // https://www.spacex.com/assets/media/falcon-users-guide-2025-05-09.pdf
+  // 70 m height, 3.66 m core diameter, 7,686 kN sea-level stage 1, 981 kN vacuum stage 2.
+  // The guide does not give the complete masses below. Those, Isp, the 200 km target,
+  // guidance, drag coefficients, and event delays are rounded illustrative assumptions.
+  const C = Object.freeze({
+    earth:{radius:6371000,mu:3.986004418e14,seaDensity:1.225,scaleHeight:8500,rotation:0},
+    pad:{latitudeDeg:28.6},
+    stage1:{dry:25600,prop:411000,thrustSL:7686000,thrustVac:8227000,ispSL:282,ispVac:311,area:10.5,cd:.34,center:24},
+    stage2:{dry:4000,prop:107500,thrustVac:981000,ispVac:348,area:7.5,cd:.28,center:52},
+    hardware:{fairing:1900,payload:15000},
+    target:{altitude:200000,tolerance:25000,perigeeFloor:175000,apogeeCeiling:225000},
+    // Latest burn times are guidance safety cutoffs if a fuel/target cutoff has not occurred.
+    timing:{countdown:10,ignitionHold:2,sepCoast:2,sesCoast:3,fairingEarliest:15,mecoLatest:164,upperLatest:430},
+    guidance:{pitchStart:9,pitchEnd1:154,firstPitchDeg:64,pitchEnd2:340,finalPitchDeg:89,qLimit:33000,accelLimit1:4.5,accelLimit2:5.0},
+    physicsDt:.02,maxStepsPerFrame:20,g0:9.80665
+  });
+  const MILESTONES=[['PRELAUNCH','Prelaunch'],['IGNITION','Ignition'],['LIFTOFF','Liftoff'],['MAX_Q','Max-Q'],['MECO','MECO'],['STAGE_SEP','Stage sep'],['SES_1','SES-1'],['FAIRING','Fairing'],['SECO','SECO']];
+  const el={canvas:document.getElementById('view'),clock:document.getElementById('clock'),phase:document.getElementById('phase'),timeline:document.getElementById('timeline'),note:document.getElementById('note'),orbit:document.getElementById('orbit'),alt:document.getElementById('alt'),speed:document.getElementById('speed'),thrust:document.getElementById('thrust'),q:document.getElementById('q'),mass:document.getElementById('mass'),acc:document.getElementById('acc'),launch:document.getElementById('launch'),pause:document.getElementById('pause'),reset:document.getElementById('reset'),cinema:document.getElementById('cinema'),shake:document.getElementById('shake')};
+  const eventNodes={};
+  for(const [key,label] of MILESTONES){const d=document.createElement('div');d.className='event';d.innerHTML='<i aria-hidden="true"></i><span>'+label+'</span><small>—</small>';el.timeline.append(d);eventNodes[key]=d;}
+
+  // SCENE / PRECISION — Physics stays in Float64 Earth-centered-equivalent coordinates:
+  // launch origin (0,0,0), Earth center (0,-R,0), +x east and +y radial at the pad.
+  // Every render subtracts the current vehicle origin before converting to WebGL floats.
+  // A logarithmic depth buffer is used by both built-in materials and particle shaders.
+  const renderer=new THREE.WebGLRenderer({canvas:el.canvas,antialias:true,alpha:false,logarithmicDepthBuffer:true,powerPreference:'high-performance'});
+  renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));renderer.setSize(innerWidth,innerHeight,false);
+  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.35;
+  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.08,2.1e7);
+  camera.position.set(82,22,135);camera.lookAt(0,35,0);
+  const V=(x=0,y=0,z=0)=>new THREE.Vector3(x,y,z);
+  const earthCenter=V(0,-C.earth.radius,0),up=V(0,1,0);
+  const sunDir=V(.42,.72,.45).normalize();
+  const hemi=new THREE.HemisphereLight(0xb9dbff,0x6b614c,2.05);scene.add(hemi);
+  const sun=new THREE.DirectionalLight(0xfff2d5,2.4);sun.position.copy(sunDir).multiplyScalar(180);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-160;sun.shadow.camera.right=160;sun.shadow.camera.top=180;sun.shadow.camera.bottom=-120;sun.shadow.camera.near=1;sun.shadow.camera.far=500;sun.shadow.bias=-.0002;sun.target.position.set(0,30,0);scene.add(sun,sun.target);
+  const fireLight=new THREE.PointLight(0xff9a30,0,120,1.6);fireLight.castShadow=true;fireLight.shadow.mapSize.set(512,512);fireLight.shadow.bias=-.001;scene.add(fireLight);
+  const sky=new THREE.Mesh(new THREE.SphereGeometry(400000,32,20),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,depthTest:false,uniforms:{uAlt:{value:0},uSun:{value:sunDir}},vertexShader:`varying vec3 vDir; void main(){vDir=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,fragmentShader:`uniform float uAlt;uniform vec3 uSun;varying vec3 vDir;float h(vec3 p){return fract(sin(dot(p,vec3(12.9898,78.233,37.719)))*43758.5453);}void main(){float t=clamp(vDir.y*.5+.5,0.,1.);float a=smoothstep(0.,125000.,uAlt);vec3 low=mix(vec3(.60,.71,.75),vec3(.007,.014,.032),a);vec3 high=mix(vec3(.035,.18,.39),vec3(.001,.003,.013),a);vec3 col=mix(low,high,smoothstep(.32,.92,t));float halo=pow(max(dot(normalize(vDir),normalize(uSun)),0.),20.);col+=vec3(1.,.55,.21)*halo*(1.-a)*.24;float star=step(.9988,h(floor(normalize(vDir)*410.)))*smoothstep(.15,.95,a);col+=vec3(star*.55);gl_FragColor=vec4(col,1.);}`}));sky.renderOrder=-1000;sky.frustumCulled=false;scene.add(sky);
+  // The true-radius globe makes the curved horizon consistent with gravity and altitude.
+  const globe=new THREE.Mesh(new THREE.SphereGeometry(C.earth.radius,96,64),new THREE.ShaderMaterial({uniforms:{uSun:{value:sunDir}},vertexShader:`varying vec3 vN;
+#include <logdepthbuf_pars_vertex>
+void main(){vN=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);
+#include <logdepthbuf_vertex>
+}`,fragmentShader:`varying vec3 vN;uniform vec3 uSun;
+#include <logdepthbuf_pars_fragment>
+float h(vec3 p){return fract(sin(dot(p,vec3(71.7,127.1,29.3)))*43758.5);}void main(){vec3 n=normalize(vN);float land=smoothstep(.48,.6,h(floor(n*170.)));float cloud=smoothstep(.77,.83,h(floor(n*390.)));vec3 c=mix(vec3(.018,.13,.25),vec3(.21,.27,.20),land);c=mix(c,vec3(.75,.83,.82),cloud*.58);float light=.28+.72*max(dot(n,normalize(uSun)),0.);gl_FragColor=vec4(c*light,1.);
+#include <logdepthbuf_fragment>
+}`}));globe.receiveShadow=false;scene.add(globe);
+  const mat={white:new THREE.MeshStandardMaterial({color:0xe4e9e8,metalness:.24,roughness:.5}),warm:new THREE.MeshStandardMaterial({color:0xc6d1d0,metalness:.3,roughness:.43}),black:new THREE.MeshStandardMaterial({color:0x10171d,metalness:.46,roughness:.65}),dark:new THREE.MeshStandardMaterial({color:0x273138,metalness:.5,roughness:.54}),silver:new THREE.MeshStandardMaterial({color:0x71848c,metalness:.8,roughness:.35}),brass:new THREE.MeshStandardMaterial({color:0xa28b6b,metalness:.65,roughness:.42}),tile:new THREE.MeshStandardMaterial({color:0x20323b,metalness:.35,roughness:.62}),payload:new THREE.MeshStandardMaterial({color:0x253c54,metalness:.6,roughness:.35}),inside:new THREE.MeshStandardMaterial({color:0x51616a,metalness:.25,roughness:.8,side:THREE.DoubleSide}),shrub:new THREE.MeshStandardMaterial({color:0x3b4a39,roughness:1}),glow:new THREE.MeshBasicMaterial({color:0xff9b2a,transparent:true,opacity:0,depthWrite:false}),concrete:null};
+  const seed={v:123456789};function rnd(){seed.v=(Math.imul(seed.v,1664525)+1013904223)|0;return (seed.v>>>0)/4294967296;}
+  const texCanvas=document.createElement('canvas');texCanvas.width=512;texCanvas.height=512;const tx=texCanvas.getContext('2d'),img=tx.createImageData(512,512);
+  for(let i=0;i<img.data.length;i+=4){const v=99+Math.floor(rnd()*28);img.data[i]=v+9;img.data[i+1]=v+7;img.data[i+2]=v+2;img.data[i+3]=255;}tx.putImageData(img,0,0);tx.strokeStyle='#6f706d88';tx.lineWidth=2;for(let i=0;i<512;i+=64){tx.beginPath();tx.moveTo(i,0);tx.lineTo(i,512);tx.moveTo(0,i);tx.lineTo(512,i);tx.stroke();}
+  const concreteTex=new THREE.CanvasTexture(texCanvas);concreteTex.wrapS=concreteTex.wrapT=THREE.RepeatWrapping;concreteTex.repeat.set(6,6);concreteTex.colorSpace=THREE.SRGBColorSpace;
+  mat.concrete=new THREE.MeshStandardMaterial({map:concreteTex,roughness:1});
+  const G={box:new THREE.BoxGeometry(1,1,1),sphere:new THREE.SphereGeometry(1,12,8)};const cylCache=new Map();
+  function cylinder(parent,rt,rb,h,x,y,z,m,segments=32){const key=[rt,rb,h,segments].join('/');let g=cylCache.get(key);if(!g){g=new THREE.CylinderGeometry(rt,rb,h,segments);cylCache.set(key,g);}const o=new THREE.Mesh(g,m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;parent.add(o);return o;}
+  function box(parent,w,h,d,x,y,z,m){const o=new THREE.Mesh(G.box,m);o.scale.set(w,h,d);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;parent.add(o);return o;}
+  function sphere(parent,r,x,y,z,m){const o=new THREE.Mesh(G.sphere,m);o.scale.setScalar(r);o.position.set(x,y,z);o.castShadow=true;parent.add(o);return o;}
+  function band(parent,r,y,width,m){const o=new THREE.Mesh(new THREE.TorusGeometry(r,width,6,40),m);o.rotation.x=Math.PI/2;o.position.y=y;o.castShadow=true;parent.add(o);return o;}
+
+  // PAD / TERRAIN
+  const pad=new THREE.Group();scene.add(pad);
+  const ground=new THREE.Mesh(new THREE.CircleGeometry(2200,96),new THREE.MeshStandardMaterial({color:0x45574b,roughness:1}));ground.rotation.x=-Math.PI/2;ground.position.y=.06;ground.receiveShadow=true;pad.add(ground);
+  box(pad,146,2.3,130,0,-.8,0,mat.concrete);box(pad,23,3,31,0,.2,0,mat.concrete);
+  box(pad,19,.18,35,0,1.82,0,mat.dark);
+  box(pad,10,.35,29,0,.45,0,mat.black);box(pad,1.2,1.2,30,-5,.85,0,mat.silver);box(pad,1.2,1.2,30,5,.85,0,mat.silver);
+  for(let i=0;i<12;i++){const z=-13+i*2.35;box(pad,10,.1,.2,0,.72,z,mat.brass);}
+  cylinder(pad,6.6,7.5,1.6,0,-.5,0,mat.dark,36);cylinder(pad,2.2,2.5,.3,0,.2,0,mat.black,36);
+  const clampPivots=[];
+  for(let i=0;i<4;i++){const a=i*Math.PI/2;const p=new THREE.Group();p.position.set(Math.cos(a)*2.9,.2,Math.sin(a)*2.9);p.rotation.y=-a;pad.add(p);box(p,.45,3,.55,-.4,1.4,0,mat.silver);box(p,1.4,.45,.65,-1.2,2.9,0,mat.dark);clampPivots.push(p);}
+  const strongbackPivot=new THREE.Group();strongbackPivot.position.set(-8,1.4,-1);pad.add(strongbackPivot);
+  box(strongbackPivot,1.5,54,1.6,0,27,0,mat.dark);
+  for(let y=6;y<=50;y+=5){box(strongbackPivot,7,.35,.55,3.5,y,0,mat.silver);box(strongbackPivot,.2,4,.2,2.2,y+2.1,0,mat.dark);}
+  for(let i=0;i<9;i++){const z=-55+i*14;const h=3+rnd()*8;box(pad,2,h,2,-44,h/2,z,mat.dark);box(pad,3,.3,3,-44,h,z,mat.silver);}
+  for(let i=0;i<15;i++){const x=(rnd()-.5)*180,z=(rnd()-.5)*180;if(Math.abs(x)<25&&Math.abs(z)<26)continue;const h=.3+rnd()*1.5;box(pad,2+rnd()*8,h,2+rnd()*8,x,-.05+h/2,z,i%3?mat.concrete:mat.dark);}
+  for(let i=0;i<45;i++){const a=rnd()*Math.PI*2,r=95+rnd()*390,x=Math.cos(a)*r,z=Math.sin(a)*r;const h=1+rnd()*4;cylinder(pad,.4,.7,h,x,h/2-.2,z,mat.shrub,5);}
+
+  // VEHICLE — Each major body is a permanent group with a body-center pivot.
+  const vehicleRoot=new THREE.Group();scene.add(vehicleRoot);
+  const booster=new THREE.Group();booster.position.y=C.stage1.center;vehicleRoot.add(booster);
+  const upper=new THREE.Group();upper.position.y=C.stage2.center;vehicleRoot.add(upper);
+  const bY=y=>y-C.stage1.center,uY=y=>y-C.stage2.center;
+  cylinder(booster,1.83,1.83,40,0,bY(22),0,mat.white,48);cylinder(booster,1.85,1.85,2.1,0,bY(2.9),0,mat.black,48);
+  cylinder(booster,1.84,1.84,4,0,bY(44),0,mat.black,48);
+  for(const y of [4.2,5.0,11,21,32,40,42.2,45.7])band(booster,1.84,bY(y),.055,y>41?mat.silver:mat.warm);
+  for(let i=0;i<3;i++){const a=i*Math.PI*2/3;box(booster,.15,36,.13,Math.cos(a)*1.84,bY(22),Math.sin(a)*1.84,mat.warm);}
+  const engineLocs=[V(0,.8,0)];
+  for(let i=0;i<8;i++){const a=i*Math.PI/4;engineLocs.push(V(Math.cos(a)*1.12,.8,Math.sin(a)*1.12));}
+  const boostGlow=[];
+  for(const e of engineLocs){cylinder(booster,.47,.7,1.35,e.x,bY(1.05),e.z,mat.dark,20);cylinder(booster,.28,.45,.55,e.x,bY(1.9),e.z,mat.brass,20);const rim=band(booster,.53,bY(.4),.045,mat.silver);rim.position.x=e.x;rim.position.z=e.z;const g=sphere(booster,.37,e.x,bY(.35),e.z,mat.glow.clone());boostGlow.push(g);}
+  for(let i=0;i<4;i++){const a=i*Math.PI/2;const leg=new THREE.Group();leg.position.set(Math.cos(a)*1.75,bY(5.5),Math.sin(a)*1.75);leg.rotation.y=-a;booster.add(leg);const strut=box(leg,.28,8.7,.4,0,0,0,mat.dark);strut.rotation.z=-.06;box(leg,.6,.15,1.2,.28,-4.4,0,mat.silver);
+    const fin=new THREE.Group();fin.position.set(Math.cos(a)*1.85,bY(38),Math.sin(a)*1.85);fin.rotation.y=-a;booster.add(fin);box(fin,.14,3.2,1.7,.13,0,0,mat.dark);for(let k=-3;k<=3;k++)box(fin,.2,.07,1.65,.2,k*.45,0,mat.silver);for(let k=-2;k<=2;k++)box(fin,.2,3.1,.045,.2,0,k*.31,mat.silver);
+  }
+  cylinder(upper,1.83,1.83,12,0,uY(52),0,mat.white,48);
+  for(const y of [46.1,47,50,55,57.8])band(upper,1.835,uY(y),.05,mat.silver);
+  for(let i=0;i<4;i++){const a=i*Math.PI/2;box(upper,.1,9,.12,Math.cos(a)*1.82,uY(52),Math.sin(a)*1.82,mat.warm);}
+  cylinder(upper,.5,1.35,2.8,0,uY(44.4),0,mat.dark,32);cylinder(upper,.37,.5,.85,0,uY(46.2),0,mat.brass,28);band(upper,1.37,uY(43.1),.075,mat.silver);
+  const upperGlow=sphere(upper,.63,0,uY(42.9),0,mat.glow.clone());
+  const payload=new THREE.Group();payload.position.y=uY(63.5);upper.add(payload);
+  const satMat=mat.payload;
+  for(let i=0;i<14;i++){const y=-4+i*.58;box(payload,2.35,.34,1.4,0,y,0,satMat);box(payload,2.5,.035,1.52,0,y+.21,0,mat.silver);for(const x of [-.75,0,.75])box(payload,.055,.4,1.5,x,y,0,mat.black);}
+  box(payload,.65,.7,.8,0,4.2,0,mat.silver);sphere(payload,.3,0,4.75,0,mat.silver);
+  // Swept shells with outer and inner surfaces, side seams, and a blunt nose.
+  function fairingGeometry(side,inner){
+    const profile=[[-6,1.83],[-5.3,2.32],[-4.5,2.58],[-1,2.6],[1.7,2.57],[3.5,2.35],[5,1.65],[6,.73],[6.35,.16]];
+    const verts=[],idx=[],steps=22;const start=side===1?-Math.PI/2:Math.PI/2;
+    for(const [y,r0] of profile){const r=Math.max(.04,r0-(inner?.11:0));for(let j=0;j<=steps;j++){const a=start+Math.PI*j/steps;verts.push(Math.cos(a)*r,y,Math.sin(a)*r);}}
+    for(let k=0;k<profile.length-1;k++)for(let j=0;j<steps;j++){let a=k*(steps+1)+j,b=a+steps+1;if(inner)idx.push(a,b,a+1,a+1,b,b+1);else idx.push(a,a+1,b,a+1,b+1,b);}
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));g.setIndex(idx);g.computeVertexNormals();return g;
+  }
+  const fairings=[];
+  for(const side of [1,-1]){const h=new THREE.Group();h.position.y=uY(64);upper.add(h);const outside=new THREE.Mesh(fairingGeometry(side,false),mat.white);outside.castShadow=true;outside.receiveShadow=true;h.add(outside);const inside=new THREE.Mesh(fairingGeometry(side,true),mat.inside);inside.castShadow=true;h.add(inside);for(const y of [-6,-4.5,1.7,3.5]){const r=y===-6?1.83:y===-4.5?2.58:y===1.7?2.57:2.35;for(const z of [-r,r])box(h,.17,.14,.14,0,y,z,mat.warm);}fairings.push(h);}
+
+  const boostPlumes=[];
+  for(const e of engineLocs){const m=new THREE.Mesh(new THREE.CylinderGeometry(.24,.78,5.6,12,1,true),new THREE.MeshBasicMaterial({color:0xffbd64,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide}));m.position.set(e.x,bY(-2.2),e.z);m.castShadow=false;booster.add(m);boostPlumes.push(m);}
+  const upperPlume=new THREE.Mesh(new THREE.CylinderGeometry(.45,1.4,10,18,1,true),new THREE.MeshBasicMaterial({color:0xaedaff,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide}));upperPlume.position.y=uY(38);upper.add(upperPlume);
+
+  // PARTICLES — Fixed ring of typed arrays and one Points draw call. No per-frame
+  // particle meshes, and old exhaust keeps moving after the engine stops.
+  const particles=(()=>{
+    const N=4600,P=new Float64Array(N*3),W=new Float64Array(N*3),age=new Float32Array(N),life=new Float32Array(N),base=new Float32Array(N),kind=new Uint8Array(N);
+    const rp=new Float32Array(N*3),rc=new Float32Array(N*4),rs=new Float32Array(N);let next=0;
+    const geom=new THREE.BufferGeometry();geom.setAttribute('position',new THREE.BufferAttribute(rp,3).setUsage(THREE.DynamicDrawUsage));geom.setAttribute('aTint',new THREE.BufferAttribute(rc,4).setUsage(THREE.DynamicDrawUsage));geom.setAttribute('aSize',new THREE.BufferAttribute(rs,1).setUsage(THREE.DynamicDrawUsage));
+    const material=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.NormalBlending,uniforms:{uPointScale:{value:700}},vertexShader:`attribute vec4 aTint;attribute float aSize;uniform float uPointScale;varying vec4 vTint;
+#include <logdepthbuf_pars_vertex>
+void main(){vTint=aTint;vec4 mvPosition=modelViewMatrix*vec4(position,1.0);gl_Position=projectionMatrix*mvPosition;gl_PointSize=clamp(aSize*uPointScale/max(1.0,-mvPosition.z),0.0,170.0);
+#include <logdepthbuf_vertex>
+}`,fragmentShader:`varying vec4 vTint;
+#include <logdepthbuf_pars_fragment>
+void main(){vec2 uv=gl_PointCoord*2.0-1.0;float r=dot(uv,uv);float soft=1.0-smoothstep(.08,1.0,r);gl_FragColor=vec4(vTint.rgb,vTint.a*soft);
+#include <logdepthbuf_fragment>
+}`});
+    const points=new THREE.Points(geom,material);points.frustumCulled=false;points.renderOrder=30;scene.add(points);
+    function emit(p,v,l,s,k){const i=next;next=(next+1)%N;const j=i*3;P[j]=p.x;P[j+1]=p.y;P[j+2]=p.z;W[j]=v.x;W[j+1]=v.y;W[j+2]=v.z;age[i]=.0001;life[i]=l;base[i]=s;kind[i]=k;}
+    function step(dt){for(let i=0;i<N;i++){if(age[i]<=0)continue;age[i]+=dt;if(age[i]>=life[i]){age[i]=0;continue;}const j=i*3,smoke=kind[i]===2;const damping=Math.exp(-dt*(smoke?.33:.055));W[j]*=damping;W[j+2]*=damping;W[j+1]=W[j+1]*damping-(smoke?1.2:4.4)*dt;P[j]+=W[j]*dt;P[j+1]+=W[j+1]*dt;P[j+2]+=W[j+2]*dt;
+      if(P[j+1]<.5&&Math.abs(P[j])<22&&Math.abs(P[j+2])<25&&!smoke){kind[i]=2;P[j+1]=.5;W[j]=(rnd()-.5)*12;W[j+1]=1+rnd()*3;W[j+2]=(rnd()-.5)*14;life[i]=Math.max(life[i],age[i]+3);base[i]*=1.5;}
+    }}
+    function draw(origin){for(let i=0;i<N;i++){const j=i*3,k=i*4;if(age[i]<=0){rs[i]=0;rc[k+3]=0;continue;}const t=Math.min(1,age[i]/life[i]),smoke=kind[i]===2,upperJet=kind[i]===1;
+      rp[j]=P[j]-origin.x;rp[j+1]=P[j+1]-origin.y;rp[j+2]=P[j+2]-origin.z;
+      const ignition=Math.max(0,1-t*2.8);const c0=upperJet?[.64,.85,1]:[1,.98,.78],c1=upperJet?[.32,.53,.8]:[1,.37,.08],c2=[.30,.34,.38];
+      let blend=Math.min(1,t*(upperJet?2.1:2.4));if(smoke)blend=1;
+      const v=blend<.6?blend/.6:(blend-.6)/.4;
+      for(let a=0;a<3;a++)rc[k+a]=blend<.6?c0[a]*(1-v)+c1[a]*v:c1[a]*(1-v)+c2[a]*v;
+      if(smoke){rc[k]=.28;rc[k+1]=.31;rc[k+2]=.34;}
+      rc[k+3]=(smoke?.38:upperJet?.72:.78)*Math.min(1,t*14+0.1)*Math.pow(1-t,smoke?.8:1.25);
+      rs[i]=base[i]*(1+(smoke?5:upperJet?4:3.5)*t)*(upperJet?1.3:1);
+    }geom.attributes.position.needsUpdate=true;geom.attributes.aTint.needsUpdate=true;geom.attributes.aSize.needsUpdate=true;}
+    function clear(){age.fill(0);rs.fill(0);rc.fill(0);geom.attributes.aSize.needsUpdate=true;geom.attributes.aTint.needsUpdate=true;next=0;}
+    return {emit,step,draw,clear,material};
+  })();
+
+  // PHYSICS — The reference point is the original core base, even after staging.
+  // At each fixed step: compute mass from still-attached components; burn dm =
+  // thrust*dt/(Isp*g0); calculate gravity -mu*r/|r|^3 and aerodynamic force
+  // -1/2*rho*Cd*A*|v_air|*v_air; then semi-implicit Euler v+=a*dt, p+=v*dt.
+  // Earth rotation is intentionally zero, so the atmosphere is stationary in
+  // this local inertial illustration and v_air equals inertial velocity.
+  const state={};let detached=[];
+  function smooth(a,b,x){const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);}
+  function altitude(p){return p.distanceTo(earthCenter)-C.earth.radius;}
+  function density(h){return h>=160000?0:C.earth.seaDensity*Math.exp(-Math.max(0,h)/C.earth.scaleHeight);}
+  function gravity(p,target){target.copy(p).sub(earthCenter);const r2=target.lengthSq(),inv=1/Math.sqrt(r2);return target.multiplyScalar(-C.earth.mu*inv/r2);}
+  function activeMass(){return C.stage2.dry+state.fuel2+C.hardware.payload+(state.boosterAttached?C.stage1.dry+state.fuel1:0)+(state.fairingsAttached?C.hardware.fairing:0);}
+  function orbitElements(p,v){const r=p.clone().sub(earthCenter),rr=r.length(),h=r.clone().cross(v).length(),energy=v.lengthSq()*.5-C.earth.mu/rr;
+    if(!(energy<0&&h>0))return {perigee:-C.earth.radius,apogee:Infinity,e:Infinity};
+    const e=Math.sqrt(Math.max(0,1+2*energy*h*h/(C.earth.mu*C.earth.mu))),a=-C.earth.mu/(2*energy);
+    return {perigee:a*(1-e)-C.earth.radius,apogee:a*(1+e)-C.earth.radius,e};
+  }
+  function orbitReached(){const o=orbitElements(state.p,state.v);return altitude(state.p)>=C.target.perigeeFloor&&o.perigee>=C.target.perigeeFloor&&o.apogee<=C.target.apogeeCeiling;}
+  function event(key,noteText){if(state.events[key]!==undefined)return false;state.events[key]=state.t;state.phase=key;state.note=noteText;return true;}
+  function guidance(dt){if(state.phase==='PRELAUNCH'||state.phase==='IGNITION')return;
+    const radial=state.p.clone().sub(earthCenter).normalize();const east=V(1,0,0).addScaledVector(radial,-radial.x).normalize();
+    let pitch;
+    if(state.t<C.guidance.pitchEnd1) pitch=C.guidance.firstPitchDeg*smooth(C.guidance.pitchStart,C.guidance.pitchEnd1,state.t);
+    else pitch=C.guidance.firstPitchDeg+(C.guidance.finalPitchDeg-C.guidance.firstPitchDeg)*smooth(C.guidance.pitchEnd1,C.guidance.pitchEnd2,state.t);
+    if(state.mode==='UPPER'){
+      // Radial feed-forward balances gravity against the centrifugal term
+      // v_tangent^2/r. A small PD correction manages target altitude and
+      // vertical speed while the remaining thrust builds horizontal velocity.
+      const vr=state.v.dot(radial),alt=altitude(state.p),r=C.earth.radius+alt;
+      const vt2=Math.max(0,state.v.lengthSq()-vr*vr);
+      const aNeeded=C.earth.mu/(r*r)-vt2/r+(C.target.altitude-alt)*.00008-vr*.03;
+      const aEngine=C.stage2.thrustVac/activeMass();
+      const ratio=Math.max(-.23,Math.min(.82,aNeeded/aEngine));
+      const feedback=Math.acos(ratio)*180/Math.PI;
+      pitch=pitch*(1-smooth(190,265,state.t))+feedback*smooth(190,265,state.t);
+    }
+    const a=pitch*Math.PI/180,dir=radial.multiplyScalar(Math.cos(a)).addScaledVector(east,Math.sin(a)).normalize();
+    const goal=new THREE.Quaternion().setFromUnitVectors(up,dir);
+    state.q.slerp(goal,1-Math.exp(-dt*(state.mode==='UPPER'?.55:.33)));
+  }
+  const tmp1=V(),tmp2=V(),tmp3=V(),axis=V();
+  function thrustStep(dt,rho,qDynamic){
+    let thrust=0,isp=0,throttle=0;
+    if(state.mode==='BOOST'&&state.fuel1>0){
+      const vac=1-Math.min(1,rho/C.earth.seaDensity);
+      const rated=C.stage1.thrustSL+(C.stage1.thrustVac-C.stage1.thrustSL)*vac;
+      isp=C.stage1.ispSL+(C.stage1.ispVac-C.stage1.ispSL)*vac;
+      const ramp=smooth(0,.9,state.t-state.events.IGNITION);
+      const qThrottle=1-.43*smooth(C.guidance.qLimit-10000,C.guidance.qLimit+10000,qDynamic);
+      const accThrottle=Math.min(1,C.guidance.accelLimit1*C.g0*activeMass()/rated);
+      throttle=Math.max(0,Math.min(1,qThrottle,accThrottle))*ramp;
+      const request=rated*throttle*dt/(isp*C.g0),burn=Math.min(state.fuel1,request);state.fuel1=Math.max(0,state.fuel1-burn);thrust=burn*isp*C.g0/dt;
+    }else if(state.mode==='UPPER'&&state.fuel2>0){
+      isp=C.stage2.ispVac;const ramp=smooth(0,1.6,state.t-state.events.SES_1);
+      throttle=Math.min(1,C.guidance.accelLimit2*C.g0*activeMass()/C.stage2.thrustVac)*ramp;
+      const request=C.stage2.thrustVac*throttle*dt/(isp*C.g0),burn=Math.min(state.fuel2,request);state.fuel2=Math.max(0,state.fuel2-burn);thrust=burn*isp*C.g0/dt;
+    }
+    state.thrust=thrust;state.throttle=throttle;return thrust;
+  }
+  function detach(group,body){
+    // scene.attach() preserves the rendered world matrix at the parent switch.
+    // Physics position uses the same pivot transformed by the current rocket
+    // quaternion. The previous position is stored for interpolated rendering.
+    vehicleRoot.updateMatrixWorld(true);scene.attach(group);detached.push(body);
+  }
+  function newDetached(group,local,mass,area,cd,impulse,omega){
+    const pivot=local.clone().applyQuaternion(state.q),oldPivot=local.clone().applyQuaternion(state.prevQ);
+    return {group,p:state.p.clone().add(pivot),prevP:state.prevP.clone().add(oldPivot),v:state.v.clone().add(impulse),q:state.q.clone(),prevQ:state.prevQ.clone(),omega,mass,area,cd};
+  }
+  function separateBooster(){if(!event('STAGE_SEP','Pneumatic separation: the spent booster drifts aft; the upper stage coasts before ignition.'))return;
+    const m1=C.stage1.dry+state.fuel1,m2=C.stage2.dry+state.fuel2+C.hardware.payload+(state.fairingsAttached?C.hardware.fairing:0);
+    const j=2.3/(1/m1+1/m2),dir=up.clone().applyQuaternion(state.q),dv1=dir.clone().multiplyScalar(-j/m1);
+    const before=state.v.clone(),body=newDetached(booster,V(0,C.stage1.center,0),m1,22,.8,dv1,V(.012,.005,.016));
+    body.v.copy(before).add(dv1);state.v.copy(before).addScaledVector(dir,j/m2);
+    state.boosterAttached=false;detach(booster,body);
+  }
+  function releaseFairing(){if(!event('FAIRING','Both fairing shells peel away. The Starlink stack is exposed while the vacuum engine continues burning.'))return;
+    const m=C.hardware.fairing/2,sepSpeed=3.0;
+    fairings.forEach((half,i)=>{const side=i===0?1:-1,dir=V(side,0,0).applyQuaternion(state.q),dv=dir.multiplyScalar(sepSpeed);
+      const body=newDetached(half,V(0,64,0),m,6,1.05,dv,V(side*.015,.012,side*.022));
+      upper.updateMatrixWorld(true);scene.attach(half);detached.push(body);
+    });state.fairingsAttached=false;
+  }
+  function coastBody(b,dt){b.prevP.copy(b.p);b.prevQ.copy(b.q);const g=gravity(b.p,tmp1);const rho=density(altitude(b.p)),speed=b.v.length(),drag=speed>0?.5*rho*b.cd*b.area*speed/b.mass:0;
+    b.v.addScaledVector(g,dt).addScaledVector(b.v,-drag*dt);b.p.addScaledVector(b.v,dt);
+    const w=b.omega.length();axis.copy(b.omega).multiplyScalar(1/w);const dq=new THREE.Quaternion().setFromAxisAngle(axis,w*dt);b.q.premultiply(dq).normalize();
+  }
+  function emitExhaust(dt){if(state.thrust<=0)return;
+    const down=tmp1.set(0,-1,0).applyQuaternion(state.q).normalize(),baseP=state.p;
+    if(state.mode==='BOOST'){
+      for(const e of engineLocs){const p=e.clone().applyQuaternion(state.q).add(baseP);const v=state.v.clone().addScaledVector(down,105+rnd()*105);v.x+=(rnd()-.5)*13;v.z+=(rnd()-.5)*13;particles.emit(p,v,2.1+rnd()*2.2,.8+rnd()*.65,0);}
+      if(state.t<17){for(let k=0;k<3;k++){const p=V((rnd()-.5)*6,.8,(rnd()-.5)*12);const v=V((rnd()-.5)*18,1+rnd()*5,(rnd()-.5)*18);particles.emit(p,v,3+rnd()*3,1.8+rnd(),2);}}
+    }else if(state.mode==='UPPER'){
+      const alt=altitude(state.p),wide=1+2.5*smooth(12000,100000,alt);
+      for(let k=0;k<3;k++){const p=V((rnd()-.5)*.6,42.8,(rnd()-.5)*.6).applyQuaternion(state.q).add(baseP);const v=state.v.clone().addScaledVector(down,210+rnd()*190);v.x+=(rnd()-.5)*wide*35;v.z+=(rnd()-.5)*wide*35;particles.emit(p,v,1.3+rnd()*1.7,.8*wide,1);}
+    }
+  }
+  function physicsStep(dt){
+    state.prevP.copy(state.p);state.prevQ.copy(state.q);state.t=Math.round((state.t+dt)*1e8)/1e8;
+    if(state.events.IGNITION===undefined&&state.t>=0){state.t=0;event('IGNITION','Nine Merlin engines ramp up. The clamps hold the vehicle for two seconds.');state.mode='BOOST';}
+    if(state.events.IGNITION!==undefined&&!state.events.LIFTOFF&&state.t>=C.timing.ignitionHold){event('LIFTOFF','Hold-down clamps release. Thrust now accelerates the full stack.');}
+    const alt=Math.max(0,altitude(state.p)),rho=density(alt),vAir=state.v; // no Earth spin in this model
+    state.qDynamic=.5*rho*vAir.lengthSq();guidance(dt);
+    const thrust=thrustStep(dt,rho,state.qDynamic),mass=activeMass();state.mass=mass;
+    const dragArea=state.boosterAttached?C.stage1.area:C.stage2.area;
+    const dragCd=state.boosterAttached?C.stage1.cd:C.stage2.cd;
+    const dragMag=.5*rho*dragCd*dragArea*vAir.lengthSq();
+    const dragVec=vAir.lengthSq()>0?tmp2.copy(vAir).normalize().multiplyScalar(-dragMag):tmp2.set(0,0,0);
+    const thrustVec=tmp3.set(0,1,0).applyQuaternion(state.q).multiplyScalar(thrust);
+    state.properAcc=thrustVec.clone().add(dragVec).length()/mass;
+    if(state.events.LIFTOFF!==undefined){const a=gravity(state.p,V()).addScaledVector(thrustVec,1/mass).addScaledVector(dragVec,1/mass);state.v.addScaledVector(a,dt);state.p.addScaledVector(state.v,dt);}
+    else {state.p.set(0,0,0);state.v.set(0,0,0);} // clamp reaction exactly cancels net force
+    particles.step(dt);emitExhaust(dt);for(const b of detached)coastBody(b,dt);
+    if(state.events.LIFTOFF!==undefined&&state.mode==='BOOST'){
+      const q=.5*density(altitude(state.p))*state.v.lengthSq();
+      if(q>state.qPeak){state.qPeak=q;state.qPeakAt=state.t;}
+      if(!state.events.MAX_Q&&q>18000&&state.qPeak-q>Math.max(800,.025*state.qPeak)&&state.t-state.qPeakAt>1.2)
+        event('MAX_Q','Dynamic pressure has passed its measured peak: '+(state.qPeak/1000).toFixed(1)+' kPa.');
+      if(state.fuel1<=.001||state.t>=C.timing.mecoLatest){state.mode='OFF';state.thrust=0;state.throttle=0;event('MECO','First-stage cutoff. Engine glow and new exhaust stop for the separation coast.');}
+    }
+    if(state.events.MECO!==undefined&&!state.events.STAGE_SEP&&state.t>=state.events.MECO+C.timing.sepCoast)separateBooster();
+    if(state.events.STAGE_SEP!==undefined&&!state.events.SES_1&&state.t>=state.events.STAGE_SEP+C.timing.sesCoast){event('SES_1','Merlin Vacuum ignites after the second coast.');state.mode='UPPER';}
+    if(state.events.SES_1!==undefined&&!state.events.FAIRING&&state.t>=state.events.SES_1+C.timing.fairingEarliest&&altitude(state.p)>90000&&state.qDynamic<100)releaseFairing();
+    if(state.events.SES_1!==undefined&&!state.events.SECO&&state.mode==='UPPER'){
+      const burnTime=state.t-state.events.SES_1;
+      if(state.fuel2<=.001||burnTime>=C.timing.upperLatest||orbitReached()){
+        state.mode='OFF';state.thrust=0;state.throttle=0;state.finalOrbit=orbitElements(state.p,state.v);state.finalAlt=altitude(state.p);
+        event('SECO','Second-stage cutoff. The illustrative ascent is complete; orbital elements are evaluated below.');state.complete=true;
+      }
+    }
+    if(!Number.isFinite(state.p.x+state.p.y+state.p.z+state.v.x+state.v.y+state.v.z))throw Error('Non-finite flight state');
+  }
+
+  // CAMERA — Render origin follows the rocket every frame, so tracking never
+  // falls kilometres behind at orbital speed. Only cinematic offsets interpolate.
+  const motionQuery=matchMedia('(prefers-reduced-motion: reduce)');
+  let shakeEnabled=!motionQuery.matches,manual=false,camOffset=V(82,22,135),camTarget=V(0,35,0),camFov=48;
+  let orbitYaw=0,orbitPitch=0,orbitRadius=150,dragging=false,lastX=0,lastY=0;
+  function poseForPhase(){
+    if(state.events.SECO!==undefined)return {offset:V(74,28,155),target:V(0,59,0),fov:42};
+    if(state.events.FAIRING!==undefined)return {offset:V(55,20,110),target:V(0,63,0),fov:43};
+    if(state.events.SES_1!==undefined)return {offset:V(66,22,126),target:V(0,55,0),fov:44};
+    if(state.events.MECO!==undefined)return {offset:V(76,19,142),target:V(0,43,0),fov:45};
+    if(state.events.LIFTOFF!==undefined)return {offset:V(78,21,137),target:V(0,36,0),fov:47};
+    return {offset:V(82,22,135),target:V(0,35,0),fov:48};
+  }
+  const renderP=V(),renderQ=new THREE.Quaternion();
+  function render(dt,alpha){
+    renderP.copy(state.prevP).lerp(state.p,alpha);renderQ.copy(state.prevQ).slerp(state.q,alpha);
+    const origin=renderP;
+    vehicleRoot.position.set(0,0,0);vehicleRoot.quaternion.copy(renderQ);
+    pad.position.copy(origin).multiplyScalar(-1);pad.visible=altitude(renderP)<180000;
+    globe.position.copy(earthCenter).sub(origin);
+    for(const b of detached){b.group.position.copy(b.prevP).lerp(b.p,alpha).sub(origin);b.group.quaternion.copy(b.prevQ).slerp(b.q,alpha);}
+    const h=Math.max(0,altitude(renderP)),atmo=1-smooth(10000,130000,h);sky.material.uniforms.uAlt.value=h;
+    hemi.intensity=.22+1.83*atmo;sun.intensity=2.0+.4*atmo;
+    sun.position.copy(sunDir).multiplyScalar(180);sun.target.position.set(0,35,0);
+    const groundShadows=h<650;if(sun.castShadow!==groundShadows)sun.castShadow=groundShadows;
+    const firing=state.thrust>0,boosting=firing&&state.mode==='BOOST',upperFiring=firing&&state.mode==='UPPER';
+    const glow=boosting?Math.min(1,state.thrust/C.stage1.thrustSL):upperFiring?Math.min(1,state.thrust/C.stage2.thrustVac):0;
+    fireLight.intensity=firing?(boosting?88:40)*glow*(.96+.04*Math.sin(state.t*43)):0;
+    fireLight.distance=boosting?110:85;
+    fireLight.position.copy(V(0,boosting?.3:42.7,0).applyQuaternion(renderQ));
+    fireLight.castShadow=boosting&&h<140;
+    for(let i=0;i<boostGlow.length;i++){boostGlow[i].material.opacity=boosting?.72*glow:0;boostPlumes[i].material.opacity=boosting?.19*glow:0;}
+    upperGlow.material.opacity=upperFiring?.85*glow:0;upperPlume.material.opacity=upperFiring?.21*glow:0;
+    const release=state.events.LIFTOFF===undefined?0:smooth(0,2,state.t-state.events.LIFTOFF);
+    for(const p of clampPivots)p.rotation.z=-.9*release;
+    strongbackPivot.rotation.z=.27*release;
+    const pose=poseForPhase(),blend=dt>0?1-Math.exp(-dt*1.7):0;
+    if(!manual){camOffset.lerp(pose.offset,blend);camTarget.lerp(pose.target,blend);camFov+=(pose.fov-camFov)*blend;}
+    else {camTarget.lerp(pose.target,blend);const cp=Math.max(-1.25,Math.min(1.25,orbitPitch));camOffset.set(Math.sin(orbitYaw)*Math.cos(cp)*orbitRadius,Math.sin(cp)*orbitRadius,Math.cos(orbitYaw)*Math.cos(cp)*orbitRadius);camFov+=(46-camFov)*blend;}
+    camera.fov=camFov;camera.updateProjectionMatrix();
+    const tracked=camTarget.clone().applyQuaternion(renderQ),position=tracked.clone().add(camOffset);
+    if(shakeEnabled&&!motionQuery.matches&&state.running&&firing){
+      const maxq=smooth(12000,30000,state.qDynamic),strength=(boosting?.14:.045)*glow+maxq*.21;
+      position.x+=strength*(Math.sin(state.t*12.1)+.5*Math.sin(state.t*27.3));
+      position.y+=strength*(Math.sin(state.t*18.7)+.35*Math.sin(state.t*37.1));
+      position.z+=strength*.35*Math.sin(state.t*23.8);
+    }
+    camera.position.copy(position);camera.lookAt(tracked);sky.position.copy(camera.position);
+    particles.material.uniforms.uPointScale.value=innerHeight/(2*Math.tan(camera.fov*Math.PI/360));
+    particles.draw(origin);renderer.render(scene,camera);
+  }
+
+  // INTERFACE / LIFECYCLE
+  const rateButtons=[...document.querySelectorAll('[data-rate]')];let lastNow=performance.now(),accumulator=0,contextLost=false,uiTimer=0;
+  function timeLabel(t){const negative=t<0,s=Math.floor(Math.abs(t)+.0001),m=Math.floor(s/60);return 'T'+(negative?'−':'+')+String(m).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+  function km(n){return Number.isFinite(n)?(n/1000).toFixed(1)+' km':'—';}
+  function updateUI(){
+    el.clock.textContent=timeLabel(state.t);el.phase.textContent=MILESTONES.find(a=>a[0]===state.phase)?.[1]||state.phase;
+    el.alt.textContent=km(Math.max(0,altitude(state.p)));
+    el.speed.textContent=Math.round(state.v.length()).toLocaleString()+' m/s';
+    el.thrust.textContent=Math.round(state.thrust/1000).toLocaleString()+' kN';
+    el.q.textContent=(state.qDynamic/1000).toFixed(1)+' kPa';
+    el.mass.textContent=(activeMass()/1000).toFixed(1)+' t';
+    el.acc.textContent=(state.properAcc/C.g0).toFixed(2)+' g';
+    const current=MILESTONES.findIndex(a=>a[0]===state.phase);
+    MILESTONES.forEach(([key],i)=>{const n=eventNodes[key];n.className='event'+(i<current?' done':'')+(i===current?' current':'');const t=state.events[key];n.querySelector('small').textContent=t===undefined?'—':timeLabel(t).slice(1);});
+    el.note.innerHTML='<strong>'+el.phase.textContent+'.</strong> '+state.note;
+    if(state.complete){const o=state.finalOrbit,ok=o.perigee>=C.target.perigeeFloor&&o.apogee<=C.target.apogeeCeiling;
+      el.orbit.innerHTML='Target: <b>200 × 200 km, prograde (±25 km)</b><br>Simulated '+(ok?'<b>target corridor reached</b>':'<b>target corridor not reached</b>')+' · perigee '+km(o.perigee)+' · apogee '+km(o.apogee)+'.';
+    }else el.orbit.innerHTML='Target: <b>200 × 200 km, prograde (±25 km)</b><br>SECO ends the simulated ascent. Orbit status is calculated from the final state.';
+    el.launch.textContent=state.complete?'Replay mission':state.started?'In flight':'Launch';el.launch.disabled=state.started&&!state.complete;
+    el.pause.disabled=!state.started;el.pause.textContent=state.running?'Pause':'Resume';
+    el.reset.textContent=state.complete?'Replay':'Reset';
+    for(const b of rateButtons)b.classList.toggle('selected',Number(b.dataset.rate)===state.rate);
+    el.shake.textContent='Shake: '+(shakeEnabled&&!motionQuery.matches?'on':'off');el.shake.setAttribute('aria-pressed',String(shakeEnabled&&!motionQuery.matches));el.shake.disabled=motionQuery.matches;
+  }
+  function reset(){
+    // Reuse every scene object and GPU buffer. Parents and local transforms are
+    // restored explicitly; no animation loop or resource is recreated.
+    vehicleRoot.add(booster);booster.position.set(0,C.stage1.center,0);booster.quaternion.identity();
+    fairings.forEach(h=>{upper.add(h);h.position.set(0,uY(64),0);h.quaternion.identity();h.visible=true;});
+    upper.position.set(0,C.stage2.center,0);upper.quaternion.identity();payload.visible=true;booster.visible=true;
+    detached=[];particles.clear();seed.v=123456789;
+    state.t=-C.timing.countdown;state.p=V();state.prevP=V();state.v=V();state.q=new THREE.Quaternion();state.prevQ=new THREE.Quaternion();
+    state.phase='PRELAUNCH';state.mode='OFF';state.events={PRELAUNCH:state.t};state.note='Ready on the pad. Ignite, hold for two seconds, then release the clamps.';
+    state.fuel1=C.stage1.prop;state.fuel2=C.stage2.prop;state.boosterAttached=true;state.fairingsAttached=true;
+    state.thrust=0;state.throttle=0;state.properAcc=0;state.qDynamic=0;state.qPeak=0;state.qPeakAt=-1;
+    state.running=false;state.started=false;state.complete=false;state.finalOrbit=null;state.rate=1;
+    accumulator=0;lastNow=performance.now();manual=false;camOffset.set(82,22,135);camTarget.set(0,35,0);camFov=48;orbitYaw=0;orbitPitch=0;orbitRadius=150;
+    clampPivots.forEach(p=>p.rotation.z=0);strongbackPivot.rotation.z=0;updateUI();render(0,0);
+  }
+  function launch(){if(state.complete)reset();if(state.started)return;state.started=true;state.running=true;lastNow=performance.now();updateUI();}
+  function togglePause(){if(!state.started)return;state.running=!state.running;lastNow=performance.now();accumulator=0;updateUI();}
+  el.launch.addEventListener('click',launch);el.pause.addEventListener('click',togglePause);
+  el.reset.addEventListener('click',()=>{const replay=state.complete;reset();if(replay)launch();});
+  el.cinema.addEventListener('click',()=>{manual=false;});
+  el.shake.addEventListener('click',()=>{if(!motionQuery.matches){shakeEnabled=!shakeEnabled;updateUI();}});
+  motionQuery.addEventListener?.('change',updateUI);
+  for(const b of rateButtons)b.addEventListener('click',()=>{state.rate=Number(b.dataset.rate);updateUI();});
+  window.addEventListener('keydown',e=>{if(e.altKey||e.ctrlKey||e.metaKey||e.target instanceof HTMLButtonElement)return;
+    if(e.code==='Space'){e.preventDefault();state.started?togglePause():launch();}
+    else if(e.key==='r'||e.key==='R')reset();else if(e.key==='1'||e.key==='4'||e.key==='0'){state.rate=e.key==='0'?10:Number(e.key);updateUI();}
+    else if(e.key==='c'||e.key==='C')manual=false;else if(e.key==='s'||e.key==='S'){if(!motionQuery.matches){shakeEnabled=!shakeEnabled;updateUI();}}
+  });
+  function enterManual(){if(manual)return;const d=camera.position.clone().sub(camTarget.clone().applyQuaternion(renderQ));orbitRadius=Math.max(35,d.length());orbitYaw=Math.atan2(d.x,d.z);orbitPitch=Math.asin(Math.max(-1,Math.min(1,d.y/orbitRadius)));manual=true;}
+  el.canvas.addEventListener('pointerdown',e=>{dragging=true;enterManual();lastX=e.clientX;lastY=e.clientY;el.canvas.setPointerCapture(e.pointerId);});
+  el.canvas.addEventListener('pointermove',e=>{if(!dragging)return;orbitYaw-=(e.clientX-lastX)*.006;orbitPitch=Math.max(-1.25,Math.min(1.25,orbitPitch+(e.clientY-lastY)*.006));lastX=e.clientX;lastY=e.clientY;});
+  for(const name of ['pointerup','pointercancel','lostpointercapture'])el.canvas.addEventListener(name,()=>{dragging=false;});
+  el.canvas.addEventListener('wheel',e=>{e.preventDefault();enterManual();orbitRadius=Math.max(30,Math.min(1200,orbitRadius*Math.exp(e.deltaY*.001)));},{passive:false});
+  function resize(){renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();}
+  window.addEventListener('resize',resize);
+  document.addEventListener('visibilitychange',()=>{lastNow=performance.now();accumulator=0;});
+  el.canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();contextLost=true;fatal('The WebGL context was lost. The browser is restoring the 3D view; if it does not return, refresh this page.');});
+  el.canvas.addEventListener('webglcontextrestored',()=>{contextLost=false;notice.classList.remove('show');lastNow=performance.now();accumulator=0;});
+  function frame(now){requestAnimationFrame(frame);if(contextLost)return;
+    const realDt=Math.min(.05,Math.max(0,(now-lastNow)/1000));lastNow=now;
+    try{
+      if(state.running&&!document.hidden){accumulator=Math.min(accumulator+realDt*state.rate,C.physicsDt*C.maxStepsPerFrame);let count=0;
+        while(accumulator>=C.physicsDt-1e-10&&count<C.maxStepsPerFrame){physicsStep(C.physicsDt);accumulator-=C.physicsDt;count++;}
+      }
+      render(state.running?realDt:0,Math.max(0,Math.min(1,accumulator/C.physicsDt)));
+      uiTimer+=realDt;if(uiTimer>.11){updateUI();uiTimer=0;}
+    }catch(error){console.error(error);state.running=false;fatal('Simulation stopped because of an error: '+error.message);}
+  }
+  reset();requestAnimationFrame(frame);
+  // Test hook: deterministic fixed-step checks without changing normal controls.
+  // Browser tests can compare snapshots at identical simulated times across rates.
+  window.falconCheck={reset,step:(n=1)=>{for(let i=0;i<n;i++)physicsStep(C.physicsDt);render(0,0);updateUI();},snapshot:()=>({t:state.t,phase:state.phase,mode:state.mode,p:state.p.toArray(),v:state.v.toArray(),fuel1:state.fuel1,fuel2:state.fuel2,mass:activeMass(),q:state.qDynamic,thrust:state.thrust,events:{...state.events},detached:detached.map(b=>({p:b.p.toArray(),v:b.v.toArray()})),orbit:state.finalOrbit})};
+}
+</script>
+</body>
+</html>

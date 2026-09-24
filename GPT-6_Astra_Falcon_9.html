@@ -1,0 +1,696 @@
+<!doctype html>
+<!-- Verification: Node executed the shared physics at 1x/4x/10x and 30/60/144 Hz;
+     all deterministic checks passed. JavaScript syntax was checked. Visual/WebGL
+     execution was unavailable: the test browser's security policy blocks file://
+     URLs. No rendered milestone, shader, clipping or visual-reset tests are claimed. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080e18">
+<title>ASTRA · Falcon 9 / Starlink</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23080e18'/%3E%3Cpath d='M7 25 16 6l9 19-9-5z' fill='%239debf5'/%3E%3C/svg%3E">
+<style>
+:root{color-scheme:dark;--ink:#eef5fa;--muted:#acbdcb;--line:#b9d8f32b;--accent:#a6edf5;--glass:#08121ed9;font-family:Inter,Segoe UI,Arial,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:#080e18;color:var(--ink);overflow:hidden}button,summary,select{font:inherit}button,select{border:1px solid var(--line);border-radius:5px;background:#152331;color:var(--ink);padding:10px 14px;cursor:pointer}button:hover,button[aria-pressed=true]{background:#294552;border-color:var(--accent)}button:focus-visible,summary:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:4px}button:disabled{opacity:.4;cursor:default}button.primary{background:var(--accent);color:#09202a;border-color:transparent;font-weight:700}#view{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}#shade{position:fixed;inset:0;pointer-events:none;background:linear-gradient(180deg,#050c18ab,transparent 24%,transparent 64%,#050c18ed)}
+header{position:fixed;top:25px;left:30px;right:30px;display:flex;align-items:flex-start;justify-content:space-between;gap:20px;pointer-events:none}.brand{font-size:14px;letter-spacing:.32em;font-weight:700;color:var(--accent)}h1{font-size:26px;letter-spacing:-.04em;font-weight:500;margin:10px 0 5px}.sub{font-size:13px;color:var(--muted);letter-spacing:.12em}.clock{text-align:right;font-family:Consolas,monospace}#met{font-size:32px;letter-spacing:.035em}#phase{font:14px Segoe UI,sans-serif;color:var(--accent);margin-top:8px}.tag{font-size:12px;letter-spacing:.14em;color:var(--muted)}
+#telemetry{position:fixed;top:160px;left:30px;width:160px;border-left:1px solid var(--line);padding-left:16px;pointer-events:none}dl{margin:0}dt{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.13em;margin-top:18px}dd{margin:4px 0 0;font:24px Consolas,monospace;white-space:nowrap}dd small{font:12px Segoe UI,sans-serif;color:var(--muted)}.fuel{height:3px;background:#b5d9f528;margin-top:7px}.fuel i{display:block;height:100%;background:var(--accent);width:100%}#engine{font-size:12px;line-height:1.6;color:var(--muted);margin-top:18px}
+#caption{position:fixed;right:30px;top:160px;max-width:225px;text-align:right;pointer-events:none}#eventTitle{font-size:14px;letter-spacing:.12em;color:var(--accent);text-transform:uppercase}#eventDetail{font-size:14px;line-height:1.55;color:#d2dfe8}#status{font-size:12px;line-height:1.6;color:var(--muted)}
+footer{position:fixed;bottom:22px;left:30px;right:30px}#timeline{display:grid;grid-template-columns:1.6fr repeat(8,1fr);list-style:none;padding:0;margin:0 0 20px;border-top:1px solid var(--line);gap:8px}#timeline li{padding-top:12px;font-size:12px;position:relative;color:#9db1c1}#timeline li:before{content:"";position:absolute;top:-3px;width:5px;height:5px;border-radius:50%;background:#638094}#timeline li.done{color:#e3eef6}#timeline li.done:before{background:#c4e7ef}#timeline li.active{color:var(--accent)}#timeline li.active:before{background:var(--accent);box-shadow:0 0 0 4px #a6edf51e}#timeline time{display:block;margin-top:5px;font:11px Consolas,monospace;color:#90a6b7}.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px}.speed{display:flex;gap:3px;margin:0 10px}.speed button{padding:10px 12px}.right{margin-left:auto;display:flex;gap:8px;align-items:center}.keys{font-size:12px;color:var(--muted);margin-top:12px}#slow{color:#eec797;margin-left:15px}#help{position:fixed;right:30px;bottom:178px;max-width:460px;max-height:60vh;overflow:auto;background:var(--glass);border:1px solid var(--line);border-radius:6px;backdrop-filter:blur(12px);font-size:14px;line-height:1.65;z-index:3}#help summary{cursor:pointer;padding:10px 16px;color:#d9e9f1}#help .inside{padding:0 18px 16px}#help p{margin:10px 0}#help a{color:var(--accent)}#testOutput{white-space:pre-wrap;font:12px/1.6 Consolas,monospace;color:var(--accent)}#inspect{display:none;margin-top:12px}body.inspection #inspect{display:block}#inspect select{width:100%}#message{position:fixed;inset:0;display:grid;place-content:center;text-align:center;padding:30px;background:#080e18f5;z-index:10}#message[hidden]{display:none}#message p{max-width:600px;line-height:1.7;color:#b6cedd}#message button{justify-self:center}#notice{min-height:1.5em;color:var(--muted)}.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:800px){header{top:18px;left:18px;right:18px}h1{font-size:21px}#met{font-size:25px}#telemetry{left:18px;top:130px;width:118px;padding-left:10px}dt{font-size:10px;margin-top:12px}dd{font-size:19px}#caption{right:18px;top:130px;max-width:170px}#eventDetail{font-size:12px}footer{left:18px;right:18px;bottom:14px}#timeline{overflow-x:auto;display:flex;gap:24px;padding-bottom:5px;margin-bottom:12px}#timeline li{min-width:58px;white-space:nowrap}.controls{gap:5px}.controls button{padding:9px 10px}.speed{margin:0 3px}.right{margin-left:0}.keys{display:none}#help{right:18px;bottom:158px;max-width:min(420px,calc(100vw - 36px))}#caption #status{display:none}}
+@media(max-height:650px){#telemetry{top:115px;display:grid;grid-template-columns:repeat(2,110px);width:auto;gap:12px}dt{margin-top:8px}dd{font-size:19px}#engine{display:none}#caption{top:110px}#help{bottom:145px}header{top:15px}h1{margin-top:6px}footer{bottom:12px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<canvas id="view" aria-label="Three-dimensional Falcon 9 launch simulation. Drag to orbit; use the labeled controls for the mission." tabindex="0"></canvas>
+<div id="shade"></div>
+<header><div><div class="brand">△ ASTRA / FLIGHT LAB</div><h1>Falcon 9 <span style="color:#a5c5d5">/</span> Starlink</h1><div class="sub">ILLUSTRATIVE TWO-STAGE ASCENT</div></div><div class="clock"><div class="tag">MISSION ELAPSED</div><div id="met">T−00:08.0</div><div id="phase" aria-live="polite">Prelaunch · ready</div></div></header>
+<aside id="telemetry" aria-label="Live telemetry">
+<dl><dt>Altitude · MSL</dt><dd><span id="alt">0.06</span> <small>km</small></dd><dt>Inertial speed</dt><dd><span id="speed">0</span> <small>m/s</small></dd><dt>Engine thrust</dt><dd><span id="thrust">0</span> <small>kN</small></dd></dl>
+<dl><dt>Dynamic pressure</dt><dd><span id="pressure">0.0</span> <small>kPa</small></dd><dt>Attached mass</dt><dd><span id="mass">0.0</span> <small>t</small></dd><dt>Proper acceleration</dt><dd><span id="accel">1.00</span> <small>g</small></dd></dl>
+<div id="engine"><span id="engineLabel">ENGINES OFF · CLAMPS ENGAGED</span><div style="margin-top:8px">S1 PROPELLANT<div class="fuel"><i id="fuel1"></i></div></div><div style="margin-top:10px">S2 PROPELLANT<div class="fuel"><i id="fuel2"></i></div></div></div>
+</aside>
+<aside id="caption"><div id="eventTitle">On the pad</div><p id="eventDetail">Nine engines. Two stages. One continuous flight.</p><p id="status">Target: 200 km circular<br>Apsides must both be within ±25 km.</p></aside>
+<details id="help"><summary>Mission notes &amp; checks</summary><div class="inside">
+<p>An illustrative, expendable ascent carrying a modeled 12 t Starlink stack. Target: a 200 km circular orbit, with both calculated apsides within ±25 km. Mission completion means SECO; it does not by itself mean orbital insertion. Payload deployment and booster recovery are outside this flight.</p>
+<p>Gravity follows a spherical Earth. The atmosphere is stationary and exponential; Earth rotation, wind, lift, fuel slosh, and detailed engine control are omitted. Dry masses, fuel allocations and guidance are engineering approximations, not a reconstruction of a particular mission.</p>
+<p>Public references: <a href="https://new.spacex.com/vehicles/falcon-9" target="_blank" rel="noopener noreferrer">SpaceX Falcon 9 overview</a> and <a href="https://www.spacex.com/assets/media/falcon-users-guide-2025-05-09.pdf" target="_blank" rel="noopener noreferrer">Falcon User’s Guide</a>. The modeled silhouette is 70 m tall, 3.7 m wide, with a 5.2 × 13.2 m fairing.</p>
+<p>Proper acceleration is non-gravitational force per unit mass. It reads approximately 1 g while supported by the pad and approaches zero during a vacuum coast. Max-Q is marked when the calculated pressure peak is confirmed by a sustained decline.</p>
+<p>Drag to orbit; scroll or +/− to zoom. Arrow keys orbit when the canvas is focused. C restores the cinematic view. Space launches or pauses; R resets; 1, 4, 0 select playback speed. Reduced motion disables shake and camera sweeps.</p>
+<p id="notice">Only Three.js r160 is downloaded. All visuals are generated in this file.</p>
+<button id="verify" type="button">Run deterministic physics checks</button><pre id="testOutput" aria-live="polite"></pre>
+<label id="inspect">Visual inspection checkpoint<select id="checkpoint"><option value="">Choose a paused checkpoint</option></select></label>
+</div></details>
+<footer><ol id="timeline" aria-label="Mission timeline"></ol><div class="controls"><button id="launch" class="primary" disabled>Launch mission</button><button id="pause" disabled>Pause</button><button id="reset" disabled>Reset / replay</button><div class="speed" role="group" aria-label="Playback speed"><button data-rate="1" aria-pressed="true" disabled>1×</button><button data-rate="4" aria-pressed="false" disabled>4×</button><button data-rate="10" aria-pressed="false" disabled>10×</button></div><div class="right"><button id="cinematic" aria-pressed="true" disabled>Cinematic camera</button><button id="shake" aria-pressed="true" disabled>Shake on</button></div></div><div class="keys">SPACE launch / pause &nbsp;·&nbsp; R reset &nbsp;·&nbsp; DRAG orbit &nbsp;·&nbsp; SCROLL zoom<span id="slow"></span></div></footer>
+<div id="message" role="status"><div class="brand">ASTRA / INITIALIZING</div><h2 id="messageTitle">Preparing the launch site</h2><p id="messageDetail">Loading the pinned Three.js library. An internet connection is needed for this one dependency.</p><button id="retry" hidden>Reload application</button></div>
+<script>
+'use strict';
+/* CONFIGURATION -------------------------------------------------------------
+ Public approximate envelope: SpaceX overview (70 m, 3.7 m, nine Merlin engines,
+ ~7.6 MN sea-level thrust); Falcon User's Guide (5.2 x 13.2 m fairing).
+ Sources are linked in Mission notes; no source is fetched by the simulation.
+ Fuel/dry splits, Isp, reserve, payload mass and event delays below are explicit
+ engineering estimates. They intentionally do not claim exact Block 5 internals.
+ SI units throughout. A nonrotating spherical Earth / stationary atmosphere is
+ used consistently: air-relative velocity equals inertial velocity. No free
+ rotational launch boost. This is a point-mass planar guidance model displayed
+ in 3D; detached bodies move in 3D. Attitude is commanded, not torque-solved.
+*/
+const CFG = {
+  dt:1/60, maxSteps:120, maxFrame:.12, earthR:6371000, mu:3.986004418e14, g0:9.80665,
+  rho0:1.225, scaleHeight:8500, countdown:8, ignitionHold:2,
+  stageCoast:2.4, upperCoast:2.0, fairingDelay:12, fairingAltitude:100000,
+  fairingQ:80, peakConfirm:.65, qThrottleStart:16000, qThrottleEnd:35000,
+  stage1:{dry:25600,prop:411000,reserve:8000,seaThrust:7607000,vacThrust:8227000,seaIsp:282,vacIsp:311,ramp:1.1},
+  stage2:{dry:4000,prop:107500,thrust:981000,isp:348,ramp:1.5},
+  fairingMass:1900,payload:12000,maxProperG:4,cd:.3,area:Math.PI*2.6*2.6,
+  targetAlt:200000,orbitTolerance:25000,sepSpeed:2.2,fairingSpeed:3,
+  postflight:15,particles:4800,pixelRatio:1.6,
+  upperY:51.4,boosterY:21.5,fairingY:62.1,payloadY:61.7,padHeight:6
+};
+const EVENTS=['Prelaunch / Countdown','Ignition','Liftoff','Max-Q','MECO','Stage Sep','SES-1','Fairing','SECO'];
+const MODES={OFF:'OFF',START:'STARTING',BURN:'RUNNING',CUT:'CUTOFF'};
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const mix=(a,b,t)=>a+(b-a)*t;
+const smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t);};
+function density(h){return CFG.rho0*Math.exp(-Math.max(0,h)/CFG.scaleHeight)*(1-smooth(140000,180000,h));}
+function stamp(t){const a=Math.abs(t);return 'T'+(t<0?'−':'+')+String(Math.floor(a/60)).padStart(2,'0')+':'+(a%60).toFixed(1).padStart(4,'0');}
+function body(){return {x:0,y:0,z:0,vx:0,vy:0,vz:0,px:0,py:0,pz:0,theta:0,ptheta:0,age:0,page:0,wx:0,wy:0,wz:0,mass:0,area:0,cd:1,active:false,ground:false};}
+function remember(b){b.px=b.x;b.py=b.y;b.pz=b.z;b.ptheta=b.theta;b.page=b.age;}
+function localPoint(b,x,y,z,out){const c=Math.cos(b.theta),s=Math.sin(b.theta);out.x=b.x+c*x+s*y;out.y=b.y-s*x+c*y;out.z=b.z+z;return out;}
+/* PROPULSION / PHYSICS -------------------------------------------------------
+ Model state uses JS doubles in Earth-centered Cartesian coordinates. +Y is
+ radial at the pad, +X downrange, +Z crossrange. Rendering later subtracts a
+ floating origin BEFORE conversion to Float32. The fixed body reference is the
+ upper tank center, also while the booster is attached. COM migration/attitude
+ torques are omitted; reference vs COM gravity error is negligible at this scale.
+ Mid-step mass and bounded propellant flow are used with kick-drift translation:
+ r += v*dt + .5*a*dt^2; v += a*dt. A 1/60 s fixed step makes playback/cadence
+ independent. Timers derive from integer ticks, never accumulated wall time.
+*/
+class Mission {
+  constructor(onEvent=null){this.onEvent=onEvent;this.ship=body();this.debris=[body(),body(),body()];this.temp={x:0,y:0,z:0};this.orbit={};this.reset();}
+  reset(){
+    this.tick=0;this.t=-CFG.countdown;this.phase=0;this.started=false;this.complete=false;this.fault='';
+    this.flags=Array(EVENTS.length).fill(false);this.flags[0]=true;this.times=Array(EVENTS.length).fill(null);this.times[0]=this.t;
+    this.log=[{id:0,t:this.t,mass:0}];this.s1=CFG.stage1.prop;this.s2=CFG.stage2.prop;
+    this.attachedBooster=true;this.attachedFairing=true;this.clamped=true;
+    this.mode1=MODES.OFF;this.mode2=MODES.OFF;this.throttle=0;this.thrust=0;this.engine=0;
+    this.q=0;this.peakQ=0;this.peakT=0;this.decline=0;this.proper=CFG.g0;this.mecoReason='';this.secoReason='';
+    this.sepError=0;this.momentumError=0;this.massError=0;this.cutoffOrbit=null;
+    Object.assign(this.ship,body());this.ship.y=CFG.earthR+CFG.padHeight+CFG.upperY;remember(this.ship);
+    for(const d of this.debris)Object.assign(d,body());this.mass=this.massNow();this.log[0].mass=this.mass;
+  }
+  massNow(){return CFG.stage2.dry+this.s2+CFG.payload+(this.attachedFairing?CFG.fairingMass:0)+(this.attachedBooster?CFG.stage1.dry+this.s1:0);}
+  altitude(){const b=this.ship;return Math.hypot(b.x,b.y,b.z)-CFG.earthR;}
+  fire(id){if(this.flags[id])return false;if(id!==this.phase+1)throw Error('Out-of-order event: '+EVENTS[id]);this.flags[id]=true;this.times[id]=this.t;this.phase=id;this.log.push({id,t:this.t,mass:this.massNow(),q:this.q});if(this.onEvent)this.onEvent(id,this);return true;}
+  orbital(out=this.orbit){
+    const b=this.ship,r=Math.hypot(b.x,b.y,b.z),v2=b.vx*b.vx+b.vy*b.vy+b.vz*b.vz;
+    const hx=b.y*b.vz-b.z*b.vy,hy=b.z*b.vx-b.x*b.vz,hz=b.x*b.vy-b.y*b.vx;
+    const h2=hx*hx+hy*hy+hz*hz,energy=v2/2-CFG.mu/r,e=Math.sqrt(Math.max(0,1+2*energy*h2/(CFG.mu*CFG.mu)));
+    out.perigee=h2/(CFG.mu*(1+e))-CFG.earthR;out.apogee=energy<0?-CFG.mu/(2*energy)*(1+e)-CFG.earthR:Infinity;
+    out.e=e;out.bound=energy<0;out.success=out.bound&&Math.abs(out.perigee-CFG.targetAlt)<=CFG.orbitTolerance&&Math.abs(out.apogee-CFG.targetAlt)<=CFG.orbitTolerance;
+    return out;
+  }
+  detach(d,lx,ly,lz,mass,area){
+    // Rigid transform r_component = r_parent + Q_parent * localOffset.
+    // Orientation Q_parent is retained; no re-centering geometry at jettison.
+    const b=this.ship;localPoint(b,lx,ly,lz,d);d.vx=b.vx;d.vy=b.vy;d.vz=b.vz;d.theta=b.theta;d.mass=mass;d.area=area;d.active=true;d.age=0;remember(d);
+    // The previous interpolation endpoint must ALSO use the parent's previous
+    // rigid transform. Setting both endpoints to the new position would jump
+    // by one physics step (tens of metres at staging) when alpha is near zero.
+    const c=Math.cos(b.ptheta),s=Math.sin(b.ptheta);
+    d.px=b.px+c*lx+s*ly;d.py=b.py-s*lx+c*ly;d.pz=b.pz+lz;d.ptheta=b.ptheta;
+    const p=this.temp;localPoint(b,lx,ly,lz,p);this.sepError=Math.max(this.sepError,Math.hypot(d.x-p.x,d.y-p.y,d.z-p.z));
+  }
+  separateBooster(){
+    const b=this.ship,d=this.debris[0],before=this.massNow(),m=CFG.stage1.dry+this.s1;
+    this.detach(d,0,CFG.boosterY-CFG.upperY,0,m,35);d.wx=.015;d.wz=.028;
+    this.attachedBooster=false;const remain=this.massNow();
+    // J = reduced mass * desired relative speed; equal/opposite momenta.
+    const oldPX=b.vx*before,oldPY=b.vy*before;
+    const J=CFG.sepSpeed*m*remain/(m+remain),jx=J*Math.sin(b.theta),jy=J*Math.cos(b.theta);
+    b.vx+=jx/remain;b.vy+=jy/remain;d.vx-=jx/m;d.vy-=jy/m;
+    this.momentumError=Math.max(this.momentumError,Math.abs(b.vx*remain+d.vx*m-oldPX),Math.abs(b.vy*remain+d.vy*m-oldPY));
+    this.massError=Math.max(this.massError,Math.abs(before-remain-m));this.fire(5);
+  }
+  releaseFairing(){
+    const b=this.ship,before=this.massNow(),half=CFG.fairingMass/2,oldPX=b.vx*before,oldPY=b.vy*before;
+    // Both shells first capture the same pre-separation vehicle velocity.
+    this.detach(this.debris[1],1.1,CFG.fairingY-CFG.upperY,0,half,20);
+    this.detach(this.debris[2],-1.1,CFG.fairingY-CFG.upperY,0,half,20);
+    this.attachedFairing=false;const remain=this.massNow(),c=Math.cos(b.theta),s=Math.sin(b.theta);
+    let jx=0,jy=0;
+    for(let i=1;i<=2;i++){
+      const d=this.debris[i],side=i===1?1:-1;
+      const ix=half*(side*CFG.fairingSpeed*c-.55*s),iy=half*(-side*CFG.fairingSpeed*s-.55*c);
+      d.vx+=ix/half;d.vy+=iy/half;jx+=ix;jy+=iy;d.wz=-side*.22;d.wy=side*.075;d.wx=.06;
+    }
+    b.vx-=jx/remain;b.vy-=jy/remain;
+    this.momentumError=Math.max(this.momentumError,Math.abs(b.vx*remain+half*(this.debris[1].vx+this.debris[2].vx)-oldPX),Math.abs(b.vy*remain+half*(this.debris[1].vy+this.debris[2].vy)-oldPY));
+    this.massError=Math.max(this.massError,Math.abs(before-remain-2*half));this.fire(7);
+  }
+  events(){
+    if(this.phase===0&&this.t>=-CFG.ignitionHold){this.mode1=MODES.START;this.fire(1);}
+    if(this.phase===1&&this.t>=0){this.clamped=false;this.fire(2);}
+    if(this.phase===2&&this.peakQ>1000&&this.decline>=CFG.peakConfirm)this.fire(3);
+    if(this.phase===3&&this.s1<=CFG.stage1.reserve+1e-7){this.s1=CFG.stage1.reserve;this.mode1=MODES.CUT;this.thrust=0;this.engine=0;this.throttle=0;this.mecoReason='Reserve reached';this.fire(4);}
+    if(this.phase===4&&this.t-this.times[4]>=CFG.stageCoast)this.separateBooster();
+    if(this.phase===5&&this.t-this.times[5]>=CFG.upperCoast){this.mode2=MODES.START;this.throttle=0;this.fire(6);}
+    if(this.phase===6&&this.t-this.times[6]>=CFG.fairingDelay&&this.altitude()>=CFG.fairingAltitude&&this.q<CFG.fairingQ)this.releaseFairing();
+    if(this.phase===7){const orbit=this.orbital();if(this.s2<=1e-7||orbit.success){
+      this.secoReason=orbit.success?'Orbital target reached':'Upper-stage propellant depleted';this.cutoffOrbit={...orbit};
+      this.mode2=MODES.CUT;this.thrust=0;this.engine=0;this.throttle=0;this.complete=true;this.fire(8);
+    }}
+  }
+  guidance(h,dt){
+    const b=this.ship,r=Math.hypot(b.x,b.y),ux=b.x/r,uy=b.y/r,vr=b.vx*ux+b.vy*uy,vt=b.vx*uy-b.vy*ux;
+    let pitch;
+    if(this.attachedBooster){pitch=74*Math.PI/180*smooth(8,155,Math.max(0,this.t));}
+    else if(this.mode2===MODES.START||this.mode2===MODES.BURN){
+      // A simplified altitude/radial-speed controller turns gradually toward
+      // horizontal. Centripetal acceleration vt²/r is included, so vertical
+      // thrust demand goes to zero near circular speed. No scripted orbit.
+      // A 10 km deadband damps radial speed before final circularization.
+      const wantedVr=Math.abs(CFG.targetAlt-h)<10000?0:clamp((CFG.targetAlt-h)*.012,-180,750);
+      const radialA=(wantedVr-vr)/45+CFG.mu/(r*r)-vt*vt/r;
+      const a=CFG.stage2.thrust/this.massNow();
+      pitch=Math.PI/2-Math.asin(clamp(radialA/a,-.45,.85));
+    }else return;
+    const desired=Math.atan2(ux*Math.cos(pitch)+uy*Math.sin(pitch),uy*Math.cos(pitch)-ux*Math.sin(pitch));
+    b.theta+=clamp(desired-b.theta,-.018*dt,.018*dt);
+  }
+  step(){
+    if(!this.started||this.fault)return;
+    const dt=CFG.dt,b=this.ship;remember(b);for(const d of this.debris)if(d.active)remember(d);
+    const r=Math.hypot(b.x,b.y,b.z),h=r-CFG.earthR,rho=density(h),speed=Math.hypot(b.vx,b.vy,b.vz);
+    this.q=.5*rho*speed*speed;this.guidance(h,dt);
+    let force=0,flow=0,stage=0,isp=0;
+    if(this.mode1===MODES.START||this.mode1===MODES.BURN){
+      stage=1;const vac=1-rho/CFG.rho0;isp=mix(CFG.stage1.seaIsp,CFG.stage1.vacIsp,vac);
+      const nominal=mix(CFG.stage1.seaThrust,CFG.stage1.vacThrust,vac),ramp=smooth(0,CFG.stage1.ramp,this.t+dt/2+CFG.ignitionHold);
+      const desired=(1-.32*smooth(CFG.qThrottleStart,CFG.qThrottleEnd,this.q))*ramp;
+      this.throttle=mix(this.throttle,desired,1-Math.exp(-dt/.35));force=nominal*this.throttle;
+      if(ramp===1)this.mode1=MODES.BURN;
+      force=Math.min(force,this.massNow()*CFG.maxProperG*CFG.g0);flow=Math.min(Math.max(0,this.s1-CFG.stage1.reserve),force/(isp*CFG.g0)*dt);force=flow*isp*CFG.g0/dt;
+    }else if(this.mode2===MODES.START||this.mode2===MODES.BURN){
+      stage=2;isp=CFG.stage2.isp;const ramp=smooth(0,CFG.stage2.ramp,this.t+dt/2-this.times[6]);
+      this.throttle=mix(this.throttle,ramp,1-Math.exp(-dt/.25));force=Math.min(CFG.stage2.thrust*this.throttle,this.massNow()*CFG.maxProperG*CFG.g0);
+      flow=Math.min(this.s2,force/(isp*CFG.g0)*dt);force=flow*isp*CFG.g0/dt;if(ramp===1)this.mode2=MODES.BURN;
+    }
+    const midMass=this.massNow()-flow/2;if(stage===1)this.s1=Math.max(CFG.stage1.reserve,this.s1-flow);if(stage===2)this.s2=Math.max(0,this.s2-flow);
+    this.mass=this.massNow();this.thrust=force;this.engine=force>0?stage:0;
+    const drag=CFG.cd*(this.attachedFairing?CFG.area:Math.PI*1.85*1.85)*this.q;
+    const dragK=speed>0?-drag/(midMass*speed):0;
+    const fx=Math.sin(b.theta)*force/midMass+dragK*b.vx,fy=Math.cos(b.theta)*force/midMass+dragK*b.vy,fz=dragK*b.vz;
+    // During the hold, support/clamp reaction cancels thrust + drag + weight.
+    // Position and velocity stay exact while fuel is still consumed. Including
+    // that reaction, an onboard accelerometer reads local g on the pad.
+    this.proper=this.clamped?CFG.mu/(r*r):Math.hypot(fx,fy,fz);
+    if(!this.clamped){const g=-CFG.mu/(r*r*r),ax=fx+g*b.x,ay=fy+g*b.y,az=fz+g*b.z;
+      b.x+=b.vx*dt+.5*ax*dt*dt;b.y+=b.vy*dt+.5*ay*dt*dt;b.z+=b.vz*dt+.5*az*dt*dt;b.vx+=ax*dt;b.vy+=ay*dt;b.vz+=az*dt;
+    }
+    for(const d of this.debris){if(!d.active||d.ground)continue;d.age+=dt;
+      const rr=Math.hypot(d.x,d.y,d.z),hh=rr-CFG.earthR,v=Math.hypot(d.vx,d.vy,d.vz),g=-CFG.mu/(rr*rr*rr);
+      const k=.5*density(hh)*d.cd*d.area*v/d.mass;
+      // Stable linearized drag kick; detached hardware has no thrust.
+      d.vx=(d.vx+g*d.x*dt)/(1+k*dt);d.vy=(d.vy+g*d.y*dt)/(1+k*dt);d.vz=(d.vz+g*d.z*dt)/(1+k*dt);
+      d.x+=d.vx*dt;d.y+=d.vy*dt;d.z+=d.vz*dt;
+      if(hh<2){const scale=(CFG.earthR+2)/rr;d.x*=scale;d.y*=scale;d.z*=scale;d.vx=d.vy=d.vz=0;d.ground=true;}
+    }
+    this.tick++;this.t=this.tick*dt-CFG.countdown;
+    const rr=Math.hypot(b.x,b.y,b.z),vv=b.vx*b.vx+b.vy*b.vy+b.vz*b.vz;this.q=.5*density(rr-CFG.earthR)*vv;
+    if(!this.clamped&&!this.flags[4]){if(this.q>this.peakQ){this.peakQ=this.q;this.peakT=this.t;this.decline=0;}else if(this.q<this.peakQ*.999)this.decline+=dt;else this.decline=0;}
+    this.events();this.mass=this.massNow();
+    // Telemetry is instantaneous at the event boundary, not the previous burn.
+    if(this.engine===0&&!this.clamped)this.proper=CFG.cd*(this.attachedFairing?CFG.area:Math.PI*1.85*1.85)*this.q/this.mass;
+    if(!Number.isFinite(b.x+b.y+b.z+b.vx+b.vy+b.vz+this.mass+this.q)||this.altitude()<-1)this.fault='Trajectory integration failed. Reset the mission.';
+  }
+}
+/* Verification runs the SAME physics class without renderer or particles. */
+function verifyPhysics(){
+  const lines=[],assert=(v,msg)=>{if(!v)throw Error(msg);};
+  let reference=null;const checkpoints=new Map();
+  for(const rate of [1,4,10])for(const hz of [30,60,144]){
+    const m=new Mission((id,s)=>{
+      if(id!==5&&id!==7)return;
+      const b=s.ship,parts=id===5?[[s.debris[0],0,CFG.boosterY-CFG.upperY]]:[[s.debris[1],1.1,CFG.fairingY-CFG.upperY],[s.debris[2],-1.1,CFG.fairingY-CFG.upperY]];
+      for(const [d,lx,ly] of parts)for(const a of [0,.25,.5,.75,1]){
+        const theta=mix(b.ptheta,b.theta,a),c=Math.cos(theta),ss=Math.sin(theta);
+        const x=mix(b.px,b.x,a)+c*lx+ss*ly,y=mix(b.py,b.y,a)-ss*lx+c*ly;
+        assert(Math.hypot(x-mix(d.px,d.x,a),y-mix(d.py,d.y,a))<.00001,'Interpolated separation continuity');
+        assert(mix(d.ptheta,d.theta,a)===theta,'Separation orientation continuity');
+      }
+    });m.started=true;let accumulator=0,hold=0,firstBurn=0,coasts=0,n=0;
+    while(!m.complete&&n++<200000){accumulator+=rate/hz;let steps=0;
+      while(accumulator+1e-12>=CFG.dt&&steps++<CFG.maxSteps&&!m.complete){
+        const oldS2=m.s2,wasUpper=m.mode2===MODES.START||m.mode2===MODES.BURN,clamped=m.clamped,py=m.ship.y,px=m.ship.x;
+        m.step();accumulator-=CFG.dt;
+        assert(!m.fault&&m.debris.every(d=>Number.isFinite(d.x+d.y+d.z+d.vx+d.vy+d.vz)),'Finite physical state');assert(m.s1>=0&&m.s2>=0,'Nonnegative propellant');assert(m.proper/CFG.g0<4.01,'Acceleration limit');
+        if(!wasUpper)assert(m.s2===oldS2,'Upper-stage fuel before SES-1');
+        if(clamped){assert(m.ship.y===py&&m.ship.x===px&&m.ship.vx===0&&m.ship.vy===0,'Stationary clamp hold');if(m.t>-CFG.ignitionHold&&m.t<=0){hold+=CFG.dt;if(m.thrust>0)firstBurn++;}}
+        if(m.phase===4||m.phase===5){assert(m.thrust===0&&m.engine===0,'Zero coast thrust');coasts++;}
+        if(m.tick%600===0){const snapshot=[m.ship.x,m.ship.y,m.ship.vx,m.ship.vy,m.s1,m.s2,m.mass,m.q,m.phase].join('|');if(rate===1&&hz===30)checkpoints.set(m.tick,snapshot);else assert(checkpoints.get(m.tick)===snapshot,'Same-time trajectory invariance');}
+      }
+    }
+    assert(m.complete,'Sequence completes');assert(m.log.map(e=>e.id).join(',')==='0,1,2,3,4,5,6,7,8','One-shot event order');
+    assert(Math.abs(m.times[2]-m.times[1]-2)<1e-10&&Math.abs(hold-2)<1e-7&&firstBurn>0,'Two-second burning hold');
+    assert(coasts>0&&m.thrust===0&&m.mode2===MODES.CUT,'Cutoffs');assert(m.sepError<1e-7&&m.massError<1e-7&&m.momentumError<1e-5,'Separation / mass / momentum continuity');
+    const result=[m.tick,m.ship.x,m.ship.y,m.ship.vx,m.ship.vy,m.s1,m.s2,...m.times];
+    if(reference)assert(result.every((v,i)=>v===reference[i]),'Cadence / playback invariance');else reference=result;
+    for(let i=0;i<300;i++)m.step();assert(m.phase===8&&m.log.length===9&&m.thrust===0&&m.proper<.001,'SECO coast remains final / zero proper acceleration');
+    m.reset();assert(m.phase===0&&m.clamped&&!m.complete&&m.s1===CFG.stage1.prop&&m.s2===CFG.stage2.prop&&m.debris.every(d=>!d.active),'Post-SECO reset');
+    m.started=true;for(let i=0;i<11000;i++)m.step();m.reset();assert(m.ship.x===0&&m.ship.vx===0&&m.thrust===0&&m.log.length===1&&m.attachedBooster&&m.attachedFairing,'Midflight reset');
+    lines.push(rate+'× / '+hz+' Hz: PASS');
+  }
+  const m=new Mission();m.started=true;while(!m.complete&&!m.fault&&m.tick<60000)m.step();
+  const o=m.orbital();lines.push('Hold, fuel, event order, coasts, mass, transforms, resets: PASS','Identical fixed-step results at all tested cadences.','SECO '+stamp(m.t)+'; '+(o.perigee/1000).toFixed(1)+' × '+(o.apogee/1000).toFixed(1)+' km');
+  return lines.join('\n');
+}
+/* SCENE CONSTRUCTION --------------------------------------------------------
+ One pinned classic script works from file:// without module/CORS imports.
+ No textures, fonts, controls or other assets are downloaded.
+*/
+const $=id=>document.getElementById(id);
+function fail(title,detail){$('message').hidden=false;$('messageTitle').textContent=title;$('messageDetail').textContent=detail;$('retry').hidden=false;}
+$('retry').onclick=()=>location.reload();
+const loader=document.createElement('script');
+loader.src='https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js';
+loader.crossOrigin='anonymous';
+let libraryReady=false;
+const loadTimer=setTimeout(()=>{if(!libraryReady)fail('Three.js could not be loaded','Check your internet connection and access to cdn.jsdelivr.net, then reload. This HTML file needs no local server.');},20000);
+loader.onerror=()=>{clearTimeout(loadTimer);fail('CDN unavailable','The pinned Three.js dependency could not be downloaded. Connect to the internet, allow cdn.jsdelivr.net, then reload.');};
+loader.onload=()=>{libraryReady=true;clearTimeout(loadTimer);try{boot();}catch(e){console.error(e);fail('Initialization failed',e.message+' Try a browser with WebGL enabled.');}};
+document.head.appendChild(loader);
+
+function boot(){
+const T=THREE,canvas=$('view'),reduced=matchMedia('(prefers-reduced-motion: reduce)');
+const renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:false,logarithmicDepthBuffer:true,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio,CFG.pixelRatio));renderer.setSize(innerWidth,innerHeight);
+renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.autoClear=false;
+const scene=new T.Scene(),camera=new T.PerspectiveCamera(43,innerWidth/innerHeight,.15,30000000);
+scene.fog=new T.FogExp2(0x83adbd,.00006);
+const origin=new T.Vector3(),tempV=new T.Vector3(),tempV2=new T.Vector3(),tempQ=new T.Quaternion(),axisY=new T.Vector3(0,1,0),axisZ=new T.Vector3(0,0,1),dummy=new T.Object3D();
+let seed=7251;
+function rand(){seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;}
+const material=(color,metalness=0,roughness=.7)=>new T.MeshStandardMaterial({color,metalness,roughness});
+const M={white:material(0xe5e5df,.18,.48),black:material(0x121c25,.3,.55),metal:material(0x657581,.78,.35),dark:material(0x26313b,.6,.4),concrete:material(0x87918a,0,.95),gold:material(0xa8874c,.65,.35),solar:material(0x172d4a,.5,.32),inside:material(0xc9bda6,.05,.88),ground:material(0x8b9d83,0,1)};
+M.white.side=T.DoubleSide;M.inside.side=T.DoubleSide;
+const boxGeo=new T.BoxGeometry(1,1,1),cylGeo=new T.CylinderGeometry(1,1,1,48),openCylGeo=new T.CylinderGeometry(1,1,1,48,1,true),sphereGeo=new T.SphereGeometry(1,20,12),ringGeo=new T.TorusGeometry(1,.012,5,48);
+function mesh(parent,g,m,x=0,y=0,z=0,sx=1,sy=1,sz=1){const o=new T.Mesh(g,m);o.position.set(x,y,z);o.scale.set(sx,sy,sz);o.castShadow=true;o.receiveShadow=true;parent.add(o);return o;}
+function box(p,w,h,d,x,y,z,m=M.metal){return mesh(p,boxGeo,m,x,y,z,w,h,d);}
+function cyl(p,r,h,x,y,z,m=M.white,open=false){return mesh(p,open?openCylGeo:cylGeo,m,x,y,z,r,h,r);}
+function ring(p,r,y,m=M.metal){const o=mesh(p,ringGeo,m,0,y,0,r,r,r);o.rotation.x=Math.PI/2;return o;}
+function group(parent,x=0,y=0,z=0){const g=new T.Group();g.position.set(x,y,z);parent.add(g);return g;}
+function batch(parent,geometry,mat,transforms){const inst=new T.InstancedMesh(geometry,mat,transforms.length);for(let i=0;i<transforms.length;i++){const a=transforms[i];dummy.position.set(a[0],a[1],a[2]);dummy.rotation.set(a[6]||0,a[7]||0,a[8]||0);dummy.scale.set(a[3],a[4],a[5]);dummy.updateMatrix();inst.setMatrixAt(i,dummy.matrix);}inst.castShadow=true;inst.receiveShadow=true;parent.add(inst);return inst;}
+function canvasTexture(w,h,draw){const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);const tex=new T.CanvasTexture(c);tex.colorSpace=T.SRGBColorSpace;tex.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());return tex;}
+const concreteTex=canvasTexture(512,512,(c,w,h)=>{c.fillStyle='#727975';c.fillRect(0,0,w,h);for(let i=0;i<21000;i++){const v=95+rand()*70;c.fillStyle='rgba('+v+','+v+','+v+',.18)';c.fillRect(rand()*w,rand()*h,1+rand()*3,1+rand()*3);}c.strokeStyle='#4d5653';c.lineWidth=2;for(let i=0;i<=4;i++){c.beginPath();c.moveTo(i*128,0);c.lineTo(i*128,512);c.moveTo(0,i*128);c.lineTo(512,i*128);c.stroke();}c.strokeStyle='#c5b785';c.lineWidth=5;c.strokeRect(30,30,452,452);});
+concreteTex.wrapS=concreteTex.wrapT=T.RepeatWrapping;concreteTex.repeat.set(4,4);M.concrete.map=concreteTex;
+
+/* Analytic curved Earth and atmosphere. This fullscreen background writes no
+ depth, so it is independent of the log-depth scene. Intersections use Earth-
+ radius units, keeping shader arithmetic bounded. Opaque local geometry and
+ the log-depth particles render over it. No far-away low-resolution sphere
+ triangles can cut through the launch pad or introduce horizon cracks. */
+const skyScene=new T.Scene(),skyCamera=new T.Camera();
+const skyUniforms={uCamera:{value:new T.Vector3()},uBasis:{value:new T.Matrix3()},uAspect:{value:camera.aspect},uTan:{value:Math.tan(camera.fov*Math.PI/360)},uAltitude:{value:0}};
+const skyMaterial=new T.ShaderMaterial({depthTest:false,depthWrite:false,uniforms:skyUniforms,vertexShader:`varying vec2 vUV;void main(){vUV=uv;gl_Position=vec4(position.xy,1.,1.);}`,fragmentShader:`
+precision highp float;
+varying vec2 vUV;uniform vec3 uCamera;uniform mat3 uBasis;uniform float uAspect,uTan,uAltitude;
+float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+1.),f.x),f.y);}
+float fbm(vec2 p){return .57*noise(p)+.28*noise(p*2.03)+.11*noise(p*4.1)+.04*noise(p*8.2);}
+void main(){
+ vec2 p=vUV*2.-1.;vec3 rd=normalize(uBasis*vec3(p.x*uAspect*uTan,p.y*uTan,-1.));vec3 up=normalize(uCamera),sun=normalize(vec3(-.4,.7,.6));
+ float air=exp(-max(0.,uAltitude)/34000.);float elevation=dot(rd,up),haze=pow(1.-max(elevation,0.),5.);
+ vec3 color=mix(vec3(.075,.25,.48),vec3(.59,.76,.82),haze)*air+vec3(.0015,.003,.009)*(1.-air);
+ vec2 st=vec2(atan(rd.z,rd.x)*.15915494+.5,asin(rd.y)*.31830989+.5)*vec2(1800.,900.);
+ float star=step(.9978,hash(floor(st)))*pow(max(0.,1.-length(fract(st)-.5)*2.),8.);
+ color+=star*(1.-air)*vec3(.65,.76,.9);
+ float sd=max(0.,dot(rd,sun));color+=vec3(1.,.8,.48)*(pow(sd,750.)*.5+pow(sd,9000.)*2.);
+ float b=dot(uCamera,rd),c=dot(uCamera,uCamera)-1.,disc=b*b-c;
+ if(disc>0.&&-b-sqrt(disc)>0.){
+   float t=-b-sqrt(disc);vec3 n=normalize(uCamera+t*rd);float light=.35+.65*max(0.,dot(n,sun));
+   vec2 uv=vec2(atan(n.z,n.x),asin(n.y));float land=smoothstep(.47,.55,fbm(uv*5.));
+   if(n.y>.985)land=1.-smoothstep(.00018,.00024,n.x-.000045*sin(n.z*700.));
+   vec3 ocean=vec3(.015,.075,.145),soil=mix(vec3(.055,.11,.08),vec3(.21,.24,.15),fbm(uv*38.));
+   vec3 earth=mix(ocean,soil,land)*light;
+   float cloud=smoothstep(.60,.76,fbm(uv*43.+vec2(2.,8.)))*.72;earth=mix(earth,vec3(.82,.87,.89)*light,cloud);
+   float limb=pow(1.-max(0.,dot(n,-rd)),7.);earth=mix(earth,vec3(.23,.52,.76),limb*.6);
+   float mist=air*(1.-exp(-t*160.));color=mix(earth,color,clamp(mist,.0,.92));
+ }else{
+   float tangent=sqrt(max(0.,dot(uCamera,uCamera)-b*b));float limb=exp(-abs(tangent-1.003)*310.)*step(0.,-b)*(1.-air);
+   color+=vec3(.12,.38,.73)*limb*.65;
+ }
+ gl_FragColor=vec4(color,1.);
+ #include <tonemapping_fragment>
+ #include <colorspace_fragment>
+}`});
+skyScene.add(new T.Mesh(new T.PlaneGeometry(2,2),skyMaterial));
+
+/* LAUNCH SITE --------------------------------------------------------------- */
+const site=new T.Group();scene.add(site);
+const terrainGeo=new T.PlaneGeometry(14000,14000,88,88);terrainGeo.rotateX(-Math.PI/2);
+const tp=terrainGeo.attributes.position,colors=new Float32Array(tp.count*3),tc=new T.Color();
+for(let i=0;i<tp.count;i++){const x=tp.getX(i),z=tp.getZ(i);tp.setY(i,-(x*x+z*z)/(2*CFG.earthR)-.2);const water=x>1350+300*Math.sin(z/1400);tc.set(water?0x17394c:0x526149);tc.multiplyScalar(.86+rand()*.25);colors[i*3]=tc.r;colors[i*3+1]=tc.g;colors[i*3+2]=tc.b;}
+terrainGeo.setAttribute('color',new T.BufferAttribute(colors,3));terrainGeo.computeVertexNormals();const terrainMat=material(0xffffff,0,1);terrainMat.vertexColors=true;terrainMat.transparent=true;mesh(site,terrainGeo,terrainMat);
+box(site,175,.25,150,0,.05,0,M.concrete);
+box(site,18,4,26,-13,2,0,M.concrete);box(site,18,4,26,13,2,0,M.concrete);box(site,8,4,8,0,2,-17,M.concrete);box(site,8,4,8,0,2,17,M.concrete);
+box(site,11,.16,112,0,.24,20,M.black);box(site,1,2.4,112,-6,1.2,20,M.concrete);box(site,1,2.4,112,6,1.2,20,M.concrete);
+const deflector=box(site,8,.5,7,0,1.4,1,M.dark);deflector.rotation.x=-.35;
+const clamps=[];
+for(let i=0;i<4;i++){const a=i*Math.PI/2+Math.PI/4,g=group(site,Math.cos(a)*3.5,4.3,Math.sin(a)*3.5);g.rotation.y=-a;box(g,1.1,1.2,1.5,0,.3,0,M.dark);const arm=group(g);box(arm,2,.4,.6,-.65,1,0,M.metal);clamps.push(arm);}
+const strongback=group(site,-6,4,0),beams=[];
+for(const x of [-1.3,1.3])for(const z of [-1.3,1.3])beams.push([x,21,z,.26,42,.26]);
+for(let y=2;y<42;y+=3.5){for(const z of [-1.3,1.3]){beams.push([0,y,z,2.8,.15,.15]);beams.push([0,y+1.7,z,.14,4.3,.14,0,0,.66]);}for(const x of [-1.3,1.3])beams.push([x,y,0,.15,.15,2.8]);}
+batch(strongback,boxGeo,M.dark,beams);box(strongback,2.7,40,.35,0,21,-1.2,M.metal);box(strongback,5,.4,.5,2,39,0,M.dark);box(strongback,4,.4,.5,1.3,29,0,M.dark);cyl(strongback,.2,41,-.7,21,1.4,M.white);
+const tower=group(site,-34,0,-35),tb=[];
+for(const x of [-3,3])for(const z of [-3,3])tb.push([x,34,z,.6,68,.6]);
+for(let y=4;y<66;y+=6){tb.push([0,y,0,6.5,.3,6.5]);for(const z of [-3,3])tb.push([0,y+3,z,.24,8.5,.24,0,0,.78]);}
+batch(tower,boxGeo,M.metal,tb);cyl(tower,.14,18,0,75,0,M.metal);
+mesh(tower,new T.ConeGeometry(.22,2,12),M.metal,0,85,0);
+for(let i=0;i<4;i++){const x=37+i*9;cyl(site,3,11,x,5.6,-36,M.white);mesh(site,sphereGeo,M.white,x,11,-36,3,1.2,3);cyl(site,.3,2,x,13,-36,M.metal);const pipe=cyl(site,.24,30,x,1.2,-14,M.metal);pipe.rotation.x=Math.PI/2;}
+box(site,30,8,18,65,4,-68,M.white);box(site,31,.6,19,65,8.2,-68,M.dark);
+box(site,10,.2,620,-90,.2,220,M.concrete);box(site,700,.2,10,70,.2,-100,M.concrete);
+const buildings=[],shrubs=[];
+for(let i=0;i<20;i++){const x=-110-rand()*800,z=-180+rand()*1000,w=12+rand()*18,h=3+rand()*9;buildings.push([x,h/2,z,w,h,12+rand()*14]);}
+batch(site,boxGeo,M.concrete,buildings);
+for(let i=0;i<320;i++){const x=-260+rand()*1400,z=-1200+rand()*2400;if(Math.abs(x)<105&&Math.abs(z)<150)continue;const s=1+rand()*4;shrubs.push([x,1.2,z,s,1+rand()*2,s]);}
+batch(site,sphereGeo,material(0x425944,0,1),shrubs);
+for(let i=0;i<3;i++){box(site,2,1.5,4.5,22+i*5,1,-57,M.white);box(site,1.9,.7,2,22+i*5,2,-57,M.black);}
+
+/* PROCEDURAL VEHICLE COMPONENTS ---------------------------------------------
+ The upper group is the active flight reference from the beginning. The
+ booster (including its black interstage), payload, and BOTH fairing halves
+ have explicit body-centered pivots. Meshes never migrate between bodies.
+*/
+const upper=group(scene),booster=group(upper,0,CFG.boosterY-CFG.upperY,0),payload=group(upper,0,CFG.payloadY-CFG.upperY,0);
+upper.name='upper-stage';booster.name='booster-with-interstage';payload.name='Starlink-stack';
+const by=y=>y-CFG.boosterY,uy=y=>y-CFG.upperY;
+cyl(booster,1.85,37.9,0,by(21.25),0,M.white);cyl(booster,1.87,6.3,0,by(43.35),0,M.black,true);
+cyl(booster,1.84,1.9,0,by(1.35),0,M.dark,true);cyl(booster,1.82,.3,0,by(40.2),0,M.dark);
+for(const y of [2.3,5.5,12.8,20.3,27.8,34.8,40.2,43.2,46.45])ring(booster,1.87,by(y),y>40?M.metal:M.concrete);
+for(const a of [0,Math.PI]){const g=group(booster);g.rotation.y=a;box(g,.16,32,.14,0,by(22),1.88,M.white);box(g,.21,6,.18,0,by(35),1.9,M.dark);}
+const engineLocations=[];for(let i=0;i<9;i++){const a=(i-1)*Math.PI/4,r=i?1.12:0;engineLocations.push([Math.cos(a)*r,uy(.05),Math.sin(a)*r]);}
+const upperEngineLocation=[0,uy(42.2),0];
+const bellGeo=new T.LatheGeometry([new T.Vector2(.47,0),new T.Vector2(.43,.25),new T.Vector2(.32,.6),new T.Vector2(.2,1),new T.Vector2(.18,1.35)],28);
+const bellMat=material(0x374149,.8,.28);bellMat.side=T.DoubleSide;
+const glow1=new T.MeshStandardMaterial({color:0x19120b,emissive:0xffb36a,emissiveIntensity:0,side:T.DoubleSide});
+const glow2=glow1.clone();const glowGeo=new T.CircleGeometry(.31,24);
+for(const e of engineLocations){const yy=e[1]+CFG.upperY;mesh(booster,bellGeo,bellMat,e[0],by(yy),e[2]);cyl(booster,.21,.6,e[0],by(1.8),e[2],M.metal);const g=mesh(booster,glowGeo,glow1,e[0],by(.58),e[2]);g.rotation.x=Math.PI/2;}
+const lattice=[];
+for(let i=0;i<4;i++){
+ const a=i*Math.PI/2+Math.PI/4,g=group(booster);g.rotation.y=a;
+ const leg=group(g,0,by(8),1.96);const lg=new T.CylinderGeometry(.18,.65,9.3,3);const shell=mesh(leg,lg,M.black,0,0,0,1,1,.36);shell.rotation.y=Math.PI/3;
+ cyl(leg,.09,8,.31,0,.18,M.metal);box(leg,.9,.4,.65,0,-4.3,.1,M.dark);
+ const fin=group(g,0,by(37.2),1.95);box(fin,1.35,.13,.2,0,1.2,0,M.dark);box(fin,1.35,.13,.2,0,-1.2,0,M.dark);box(fin,.13,2.5,.2,-.68,0,0,M.dark);box(fin,.13,2.5,.2,.68,0,0,M.dark);
+ const bars=[];for(let k=-3;k<=3;k++)bars.push([k*.18,0,0,.045,2.3,.14]);for(let k=-6;k<=6;k++)bars.push([0,k*.18,0,1.3,.045,.14]);batch(fin,boxGeo,M.metal,bars);
+}
+const decalTex=canvasTexture(256,1024,(c)=>{c.clearRect(0,0,256,1024);c.fillStyle='#18334b';c.textAlign='center';c.font='bold 94px Arial';'SPACEX'.split('').forEach((s,i)=>c.fillText(s,128,120+i*140));});
+const decalMat=new T.MeshStandardMaterial({map:decalTex,transparent:true,depthWrite:false,roughness:.65,polygonOffset:true,polygonOffsetFactor:-1});
+mesh(booster,new T.PlaneGeometry(1.36,9.6),decalMat,0,by(25),1.864);
+const flagTex=canvasTexture(256,144,c=>{c.fillStyle='#dddcd5';c.fillRect(0,0,256,144);for(let i=0;i<13;i+=2){c.fillStyle='#8f3e40';c.fillRect(0,i*11,256,11);}c.fillStyle='#293e5c';c.fillRect(0,0,110,78);c.fillStyle='#dddcd5';for(let y=0;y<6;y++)for(let x=0;x<7;x++)c.fillRect(8+x*14,6+y*12,4,4);});
+mesh(booster,new T.PlaneGeometry(1.15,.65),new T.MeshStandardMaterial({map:flagTex}),0,by(32),1.856);
+cyl(upper,1.83,10.5,0,uy(51.75),0,M.white);for(const y of [46.5,48,54.7,56.9])ring(upper,1.855,uy(y));
+cyl(upper,1.82,.45,0,uy(46.35),0,M.dark);cyl(upper,1.1,.7,0,uy(45.9),0,M.metal);
+const vacBell=new T.LatheGeometry([new T.Vector2(1.48,0),new T.Vector2(1.35,.6),new T.Vector2(.93,1.4),new T.Vector2(.55,2.3),new T.Vector2(.36,3.3)],48);
+mesh(upper,vacBell,bellMat,0,uy(42.2),0);ring(upper,1.48,uy(42.2));
+const vacGlow=mesh(upper,new T.CircleGeometry(.9,32),glow2,0,uy(43.3),0);vacGlow.rotation.x=Math.PI/2;
+box(upper,.18,8,.2,0,uy(51.5),1.85,M.metal);
+cyl(payload,1.1,1,0,57.6-CFG.payloadY,0,M.gold);
+const sats=[],panels=[],edges=[];
+for(let i=0;i<26;i++){const y=58.35+i*.29-CFG.payloadY;sats.push([0,y,0,3.1,.18,2.5]);panels.push([0,y+.104,0,2.85,.028,2.2]);for(const x of [-1.47,1.47])edges.push([x,y,0,.09,.24,2.45]);}
+batch(payload,boxGeo,M.metal,sats);batch(payload,boxGeo,M.solar,panels);batch(payload,boxGeo,M.gold,edges);
+for(const x of [-1.65,1.65])box(payload,.13,8.5,.2,x,.3,0,M.gold);
+
+// Curved, thick, open-at-the-bottom half-shells, with separate inside material
+// and seam faces. Elliptical shoulders give the fairing its blunt ogive.
+function fairingGeometry(side){
+ const profile=[[56.8,1.86],[57.8,2.6],[60,2.6],[63,2.6],[65.2,2.6]];
+ for(let i=1;i<=16;i++){const a=i/16*Math.PI/2;profile.push([65.2+4.8*Math.sin(a),Math.max(.025,2.6*Math.cos(a))]);}
+ const verts=[],indices=[],count=32,n=profile.length,start=side===1?-Math.PI/2:Math.PI/2;
+ for(let layer=0;layer<2;layer++)for(const [y,r] of profile)for(let j=0;j<=count;j++){const a=start+j/count*Math.PI,rad=Math.max(.012,r-layer*.055);verts.push(rad*Math.cos(a)-side*1.1,y-CFG.fairingY,rad*Math.sin(a));}
+ const row=count+1,offset=n*row;
+ function quad(a,b,c,d,flip=false){if(flip)indices.push(a,c,b,a,d,c);else indices.push(a,b,c,a,c,d);}
+ for(let layer=0;layer<2;layer++)for(let i=0;i<n-1;i++)for(let j=0;j<count;j++){const a=layer*offset+i*row+j;quad(a,a+1,a+row+1,a+row,layer===1);}
+ const outerCount=(n-1)*count*6;
+ for(let i=0;i<n-1;i++){for(const j of [0,count]){const a=i*row+j;quad(a,a+row,a+row+offset,a+offset,j===0);}}
+ for(const i of [0,n-1])for(let j=0;j<count;j++){const a=i*row+j;quad(a,a+offset,a+offset+1,a+1,i===0);}
+ const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(verts,3));g.setIndex(indices);g.clearGroups();g.addGroup(0,outerCount,0);g.addGroup(outerCount,indices.length-outerCount,1);g.computeVertexNormals();return g;
+}
+const fairings=[];
+for(const side of [1,-1]){const g=group(upper,side*1.1,CFG.fairingY-CFG.upperY,0);g.name=side===1?'fairing-right':'fairing-left';mesh(g,fairingGeometry(side),[M.white,M.inside]);fairings.push(g);
+ // Visible interior ribs stay attached to their own shell.
+ const ribPoints=[];for(const y of [58,60.5,63.5]){const start=side===1?-Math.PI/2:Math.PI/2;for(let j=0;j<32;j++){for(const a of [start+j/32*Math.PI,start+(j+1)/32*Math.PI])ribPoints.push(2.51*Math.cos(a)-side*1.1,y-CFG.fairingY,2.51*Math.sin(a));}}
+ const rg=new T.BufferGeometry();rg.setAttribute('position',new T.Float32BufferAttribute(ribPoints,3));g.add(new T.LineSegments(rg,new T.LineBasicMaterial({color:0x8c8478})));
+}
+
+/* LIGHTING ----------------------------------------------------------------- */
+const sun=new T.DirectionalLight(0xffeed4,3.1);sun.position.set(-150,230,170);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-80;sun.shadow.camera.right=80;sun.shadow.camera.top=90;sun.shadow.camera.bottom=-90;sun.shadow.camera.near=1;sun.shadow.camera.far=650;sun.shadow.normalBias=.035;sun.shadow.bias=-.00008;scene.add(sun,sun.target);
+const fill=new T.HemisphereLight(0xaed8ff,0x627b67,1.6);scene.add(fill);
+const engineLight=new T.PointLight(0xffa04c,0,150,2);engineLight.castShadow=true;engineLight.shadow.mapSize.set(512,512);engineLight.shadow.camera.near=.3;engineLight.shadow.camera.far=170;engineLight.shadow.bias=-.0002;scene.add(engineLight);
+
+/* CUSTOM RECYCLED PARTICLES --------------------------------------------------
+ Structure-of-arrays, a circular recycling cursor, and ONE instanced billboard
+ draw. No per-particle objects/meshes or per-frame allocations. Double-precision
+ world coordinates persist independently of the ship; GPU coordinates are
+ interpolated and camera-relative. These shader chunks use exactly the same
+ logarithmic depth convention as Three.js standard materials.
+*/
+class Plume {
+ constructor(){
+  const n=CFG.particles;this.n=n;this.cursor=0;this.acc=0;this.serial=0;this.rng=817;
+  for(const key of ['x','y','z','px','py','pz'])this[key]=new Float64Array(n);
+  for(const key of ['vx','vy','vz','age','life','kind','spread'])this[key]=new Float32Array(n);
+  this.positions=new Float32Array(n*3);this.sizes=new Float32Array(n);this.rgba=new Float32Array(n*4);
+  const geo=new T.InstancedBufferGeometry();geo.setIndex([0,1,2,0,2,3]);geo.setAttribute('position',new T.Float32BufferAttribute([-1,-1,0,1,-1,0,1,1,0,-1,1,0],3));geo.setAttribute('uv',new T.Float32BufferAttribute([0,0,1,0,1,1,0,1],2));
+  geo.setAttribute('iPosition',new T.InstancedBufferAttribute(this.positions,3).setUsage(T.DynamicDrawUsage));geo.setAttribute('iSize',new T.InstancedBufferAttribute(this.sizes,1).setUsage(T.DynamicDrawUsage));geo.setAttribute('iColor',new T.InstancedBufferAttribute(this.rgba,4).setUsage(T.DynamicDrawUsage));geo.instanceCount=0;
+  const mat=new T.ShaderMaterial({transparent:true,depthWrite:false,depthTest:true,uniforms:{},vertexShader:`
+   attribute vec3 iPosition;attribute float iSize;attribute vec4 iColor;varying vec2 vUv;varying vec4 vColor;
+   #include <common>
+   #include <logdepthbuf_pars_vertex>
+   void main(){vUv=uv;vColor=iColor;vec4 mvPosition=modelViewMatrix*vec4(iPosition,1.);mvPosition.xy+=position.xy*iSize;gl_Position=projectionMatrix*mvPosition;
+   #include <logdepthbuf_vertex>
+   }`,fragmentShader:`
+   varying vec2 vUv;varying vec4 vColor;
+   #include <logdepthbuf_pars_fragment>
+   void main(){vec2 p=vUv*2.-1.;float r=dot(p,p);if(r>1.)discard;float alpha=pow(1.-r,2.)*vColor.a;if(alpha<.008)discard;
+   #include <logdepthbuf_fragment>
+   gl_FragColor=vec4(vColor.rgb,alpha);
+   #include <tonemapping_fragment>
+   #include <colorspace_fragment>
+   }`});
+  this.geometry=geo;this.object=new T.Mesh(geo,mat);this.object.frustumCulled=false;this.object.renderOrder=5;scene.add(this.object);this.point={x:0,y:0,z:0};
+ }
+ random(){this.rng=(Math.imul(this.rng,1664525)+1013904223)>>>0;return this.rng/4294967296;}
+ reset(){this.life.fill(0);this.age.fill(0);this.positions.fill(0);this.rgba.fill(0);this.cursor=0;this.acc=0;this.serial=0;this.rng=817;this.geometry.instanceCount=0;}
+ emit(m){
+  const i=this.cursor;this.cursor=(i+1)%this.n;const b=m.ship,e=m.engine===1?engineLocations[this.serial++%9]:upperEngineLocation;
+  localPoint(b,e[0],e[1],e[2],this.point);const c=Math.cos(b.theta),s=Math.sin(b.theta),ambient=density(m.altitude())/CFG.rho0;
+  // A bounded pressure-response curve makes continued vacuum expansion
+  // visible through the upper burn without implying a CFD plume solution.
+  const vac=m.engine===2?1-Math.pow(ambient,.12):1-ambient;
+  const speed=(m.engine===1?135:230)*( .8+this.random()*.4),side=(this.random()-.5)*(m.engine===1?18:35+vac*35),cross=(this.random()-.5)*(m.engine===1?18:35+vac*35);
+  this.x[i]=this.px[i]=this.point.x;this.y[i]=this.py[i]=this.point.y;this.z[i]=this.pz[i]=this.point.z;
+  this.vx[i]=b.vx-speed*s+side*c;this.vy[i]=b.vy-speed*c-side*s;this.vz[i]=b.vz+cross;
+  this.age[i]=0;this.life[i]=m.engine===1?4+this.random()*2:1.5+this.random();this.kind[i]=m.engine===1?0:1;this.spread[i]=vac;
+ }
+ step(m){
+  const dt=CFG.dt,b=m.ship,r=Math.hypot(b.x,b.y,b.z),ux=b.x/r,uy=b.y/r,rho=density(m.altitude())/CFG.rho0;
+  for(let i=0;i<this.n;i++){if(this.life[i]<=0)continue;this.px[i]=this.x[i];this.py[i]=this.y[i];this.pz[i]=this.z[i];this.age[i]+=dt;if(this.age[i]>=this.life[i]){this.life[i]=0;continue;}
+   const smoke=this.kind[i]===2||this.age[i]>.55,drag=1/(1+dt*(this.kind[i]===2?.38:rho*(smoke?.7:.1)));
+   this.vx[i]=(this.vx[i]+ux*(smoke?1:-5)*dt)*drag;this.vy[i]=(this.vy[i]+uy*(smoke?1:-5)*dt)*drag;this.vz[i]*=drag;
+   this.x[i]+=this.vx[i]*dt;this.y[i]+=this.vy[i]*dt;this.z[i]+=this.vz[i]*dt;
+   if(this.y[i]<CFG.earthR+1.1&&Math.abs(this.x[i])<150&&Math.abs(this.z[i])<200){
+    this.y[i]=CFG.earthR+1.1;this.vy[i]=2+this.random()*5;
+    if(this.kind[i]!==2){this.kind[i]=2;this.vx[i]=(this.random()-.5)*35;this.vz[i]=(this.random()>.5?1:-1)*(22+this.random()*38);this.age[i]=.6;this.life[i]=6+this.random()*3;}
+   }
+  }
+  // No new emission in either coast, after MECO, or after SECO.
+  if(m.thrust>0&&m.engine){const nominal=m.engine===1?CFG.stage1.vacThrust:CFG.stage2.thrust;this.acc+=(m.engine===1?930:650)*clamp(m.thrust/nominal,0,1)*dt;while(this.acc>=1){this.emit(m);this.acc--;}}
+  else this.acc=0;
+ }
+ upload(alpha){
+  let j=0;
+  for(let i=0;i<this.n;i++){if(this.life[i]<=0)continue;const age=Math.max(0,this.age[i]-(1-alpha)*CFG.dt),f=age/this.life[i],k=this.kind[i],p=j*3,c=j*4;
+   this.positions[p]=mix(this.px[i],this.x[i],alpha)-origin.x;this.positions[p+1]=mix(this.py[i],this.y[i],alpha)-origin.y;this.positions[p+2]=mix(this.pz[i],this.z[i],alpha)-origin.z;
+   let red,green,blue,opacity,size;
+   if(k===1){const t=clamp(age/.65,0,1);red=mix(5,.36,t);green=mix(5,.50,t);blue=mix(5,.82,t);opacity=(1-f)*.32;size=1+age*(5+15*this.spread[i]);}
+   else if(k===2||age>.6){const t=smooth(.6,1.8,age);red=mix(1.5,.29,t);green=mix(.4,.31,t);blue=mix(.08,.33,t);opacity=(1-f)*.22*(k===2?1:1-.92*this.spread[i]);size=2+age*(k===2?3.4:2.6);}
+   else{const t=smooth(0,.6,age);red=mix(7,2,t);green=mix(6,.42,t);blue=mix(3,.04,t);opacity=(1-f)*.7;size=.45+age*3;}
+   this.sizes[j]=size;this.rgba[c]=red;this.rgba[c+1]=green;this.rgba[c+2]=blue;this.rgba[c+3]=opacity;j++;
+  }
+  this.geometry.instanceCount=j;this.geometry.attributes.iPosition.needsUpdate=true;this.geometry.attributes.iSize.needsUpdate=true;this.geometry.attributes.iColor.needsUpdate=true;
+ }
+}
+const plume=new Plume();
+
+/* CAMERA -------------------------------------------------------------------
+ Translation follows the interpolated ship EXACTLY. Only relative framing is
+ damped: smoothing an absolute camera position would trail kilometers behind a
+ fast upper stage. Orientation and relative target are interpolated separately.
+ Manual orbit controls are local code, avoiding another CDN dependency.
+*/
+const cameraOffset=new T.Vector3(98,-25,126),lookOffset=new T.Vector3(0,-16,0),desiredOffset=new T.Vector3(),desiredLook=new T.Vector3(),lookMatrix=new T.Matrix4(),lookQ=new T.Quaternion(),renderQ=new T.Quaternion(),cameraUp=new T.Vector3(),east=new T.Vector3();
+let cinematic=true,shake=!reduced.matches,manualYaw=.65,manualPitch=.05,manualDistance=145,zoom=1,dragging=false,lastX=0,lastY=0,cameraInitialized=false;
+function cameraUpdate(m,alpha,realDt){
+ const b=m.ship,r=origin.length();cameraUp.copy(origin).multiplyScalar(1/r);east.set(cameraUp.y,-cameraUp.x,0).normalize();
+ const t=m.t-(1-alpha)*CFG.dt,h=r-CFG.earthR,theta=mix(b.ptheta,b.theta,alpha);
+ const separated=m.flags[5],ageSep=separated?t-m.times[5]:-1,ageFair=m.flags[7]?t-m.times[7]:-1;
+ let distance=155,up=-25,targetY=-16,azimuth=.66;
+ if(t>0){up=mix(-25,22,smooth(0,50,t));distance=mix(155,126,smooth(8,85,t));}
+ if(separated){const f=smooth(3,15,ageSep);distance=mix(142,80,f);targetY=mix(-16,3,f);up=20;}
+ if(ageFair>=0){const wide=(1-smooth(5,13,ageFair));distance=mix(76,142,wide);targetY=7;up=20;}
+ if(m.complete){distance=82;targetY=5;up=26;}
+ if(!reduced.matches)azimuth+=.1*Math.sin(Math.max(0,t)*.006);
+ if(cinematic){const d=distance*zoom;desiredOffset.copy(east).multiplyScalar(Math.sin(azimuth)*d);desiredOffset.z=Math.cos(azimuth)*d;desiredOffset.addScaledVector(cameraUp,up*zoom);}
+ else{desiredOffset.copy(east).multiplyScalar(Math.sin(manualYaw)*Math.cos(manualPitch)*manualDistance);desiredOffset.z=Math.cos(manualYaw)*Math.cos(manualPitch)*manualDistance;desiredOffset.addScaledVector(cameraUp,Math.sin(manualPitch)*manualDistance);}
+ desiredLook.set(Math.sin(theta)*targetY,Math.cos(theta)*targetY,0);
+ const easing=cameraInitialized?1-Math.exp(-realDt*(reduced.matches?1.6:3.2)):1;
+ cameraOffset.lerp(desiredOffset,easing);lookOffset.lerp(desiredLook,easing);
+ camera.position.copy(cameraOffset);camera.up.copy(cameraUp);
+ // Keep manual views above the ground close to the pad.
+ tempV.copy(camera.position).add(origin);const camRadius=tempV.length();if(camRadius<CFG.earthR+2.5)camera.position.addScaledVector(cameraUp,CFG.earthR+2.5-camRadius);
+ const active=m.thrust/(m.engine===2?CFG.stage2.thrust:CFG.stage1.vacThrust),qShake=Math.min(1,m.q/30000);
+ if(shake&&!reduced.matches&&!m.complete){const a=(.10*active+.32*qShake)*Math.min(1,m.q/5000+active);camera.position.x+=a*(Math.sin(t*39.7)+.45*Math.sin(t*73.1));camera.position.y+=a*.7*Math.sin(t*51.3);camera.position.z+=a*.6*Math.sin(t*33.8);}
+ lookMatrix.lookAt(camera.position,lookOffset,camera.up);lookQ.setFromRotationMatrix(lookMatrix);if(!cameraInitialized)camera.quaternion.copy(lookQ);else camera.quaternion.slerp(lookQ,easing);
+ const targetFov=innerWidth<700?53:43;camera.fov=mix(camera.fov,targetFov,easing);camera.updateProjectionMatrix();camera.updateMatrixWorld();cameraInitialized=true;
+}
+function manual(){if(!cinematic)return;cinematic=false;const r=cameraOffset.length();manualDistance=r;manualPitch=Math.asin(clamp(cameraOffset.dot(cameraUp)/r,-.9,.9));manualYaw=Math.atan2(cameraOffset.dot(east),cameraOffset.z);$('cinematic').textContent='Return to cinematic';$('cinematic').setAttribute('aria-pressed','false');}
+function cinematicMode(){cinematic=true;zoom=1;$('cinematic').textContent='Cinematic camera';$('cinematic').setAttribute('aria-pressed','true');}
+canvas.addEventListener('pointerdown',e=>{if(e.button!==0)return;manual();dragging=true;lastX=e.clientX;lastY=e.clientY;canvas.setPointerCapture(e.pointerId);canvas.focus();});
+canvas.addEventListener('pointermove',e=>{if(!dragging)return;manualYaw-=(e.clientX-lastX)*.006;manualPitch=clamp(manualPitch+(e.clientY-lastY)*.004,-.55,1.25);lastX=e.clientX;lastY=e.clientY;});
+canvas.addEventListener('pointerup',()=>dragging=false);canvas.addEventListener('pointercancel',()=>dragging=false);
+canvas.addEventListener('wheel',e=>{e.preventDefault();if(cinematic)zoom=clamp(zoom*Math.exp(e.deltaY*.001),.55,3);else manualDistance=clamp(manualDistance*Math.exp(e.deltaY*.001),25,500);},{passive:false});
+
+/* INTERFACE / GUARDED VISUAL EVENTS ------------------------------------------ */
+const captions=[
+ ['On the pad','Nine engines. Two stages. One continuous flight.'],
+ ['Ignition','Merlin startup. Propellant is flowing; the clamps hold the vehicle stationary for two seconds.'],
+ ['Liftoff','Clamps released. The strongback is clear and thrust exceeds vehicle weight.'],
+ ['Maximum dynamic pressure','The calculated pressure peak is behind us. Throttle recovers as the atmosphere thins.'],
+ ['Main engine cutoff','First-stage engines shut down at the configured fuel reserve. A brief unpowered coast begins.'],
+ ['Stage separation','Equal and opposite separation impulses. The booster and interstage drift away together.'],
+ ['Second engine start','The vacuum Merlin starts after the separation coast. Upper-stage propellant is now flowing.'],
+ ['Fairing separation','Low atmospheric loading permits jettison. Both shells peel away; the upper-stage burn continues.'],
+ ['SECO · mission complete','The upper-stage engine is off. The displayed orbit is calculated from the cutoff state.']
+];
+const timelineNodes=[];
+for(let i=0;i<EVENTS.length;i++){const li=document.createElement('li');li.append(document.createTextNode(EVENTS[i]));const time=document.createElement('time');time.textContent=i?'—':stamp(-8);li.append(time);$('timeline').append(li);timelineNodes.push(li);}
+let lastPhase=-1;
+function refreshTimeline(m){for(let i=0;i<timelineNodes.length;i++){const li=timelineNodes[i];li.className=(m.flags[i]?'done ':'')+(m.phase===i?'active':'');if(m.phase===i)li.setAttribute('aria-current','step');else li.removeAttribute('aria-current');li.lastChild.textContent=m.times[i]===null?'—':stamp(m.times[i]);}}
+function eventVisual(id,m){
+ if(id===5){scene.updateMatrixWorld(true);scene.attach(booster);}
+ if(id===7){scene.updateMatrixWorld(true);for(const g of fairings)scene.attach(g);}
+ if(id===8){$('launch').textContent='Replay mission';$('launch').disabled=false;}
+ refreshTimeline(m);
+}
+const mission=new Mission(eventVisual);
+let running=false,paused=false,lost=false,accumulator=0,rate=1,lastNow=0,raf=0,lastUi=0,slowUntil=0;
+function drawBody(g,b,alpha){g.position.set(mix(b.px,b.x,alpha)-origin.x,mix(b.py,b.y,alpha)-origin.y,mix(b.pz,b.z,alpha)-origin.z);g.quaternion.setFromAxisAngle(axisZ,-mix(b.ptheta,b.theta,alpha));const a=mix(b.page,b.age,alpha),w=Math.hypot(b.wx,b.wy,b.wz);if(w>0){tempV.set(b.wx/w,b.wy/w,b.wz/w);tempQ.setFromAxisAngle(tempV,w*a);g.quaternion.multiply(tempQ);}}
+function render(alpha,realDt){
+ const b=mission.ship;origin.set(mix(b.px,b.x,alpha),mix(b.py,b.y,alpha),mix(b.pz,b.z,alpha));
+ upper.position.set(0,0,0);upper.quaternion.setFromAxisAngle(axisZ,-mix(b.ptheta,b.theta,alpha));
+ for(let i=0;i<mission.debris.length;i++)if(mission.debris[i].active)drawBody(i===0?booster:fairings[i-1],mission.debris[i],alpha);
+ site.position.set(-origin.x,CFG.earthR-origin.y,-origin.z);site.visible=origin.distanceToSquared(tempV.set(0,CFG.earthR,0))<900000000;
+ terrainMat.opacity=1-smooth(10000,28000,site.position.length());
+ const t=mission.t-(1-alpha)*CFG.dt;strongback.rotation.z=.26*smooth(-7,-.2,t);for(const c of clamps)c.rotation.z=-1.1*smooth(0,.6,t);
+ cameraUpdate(mission,alpha,realDt);plume.upload(alpha);
+ const h=origin.length()-CFG.earthR,air=Math.exp(-Math.max(0,h)/30000),flicker=.88+.08*Math.sin(t*87)+.04*Math.sin(t*173);
+ fill.intensity=.22+1.35*air;scene.fog.density=.000055*air;scene.fog.color.setRGB(.33*air+.015,.49*air+.03,.62*air+.06);
+ const g1=mission.engine===1?mission.thrust/CFG.stage1.vacThrust:0,g2=mission.engine===2?mission.thrust/CFG.stage2.thrust:0;
+ glow1.emissiveIntensity=g1*8*flicker;glow2.emissiveIntensity=g2*7*flicker;
+ tempV.set(0,mission.engine===2?uy(41.7):uy(-1.5),0).applyQuaternion(upper.quaternion);engineLight.position.copy(tempV);engineLight.intensity=(g1*7000+g2*1900)*flicker;engineLight.distance=mission.engine===2?65:150;
+ engineLight.castShadow=h<250&&g1>0;sun.castShadow=h<1200;renderer.shadowMap.enabled=sun.castShadow||engineLight.castShadow;
+ sun.position.set(-160,280,240);sun.target.position.set(0,0,0);
+ skyUniforms.uCamera.value.copy(camera.position).add(origin).multiplyScalar(1/CFG.earthR);skyUniforms.uBasis.value.setFromMatrix4(camera.matrixWorld);skyUniforms.uAltitude.value=Math.max(0,skyUniforms.uCamera.value.length()*CFG.earthR-CFG.earthR);skyUniforms.uAspect.value=camera.aspect;skyUniforms.uTan.value=Math.tan(camera.fov*Math.PI/360);
+ renderer.clear();renderer.render(skyScene,skyCamera);renderer.clearDepth();renderer.render(scene,camera);
+}
+function updateUI(){
+ const m=mission,b=m.ship;$('met').textContent=stamp(m.t);$('alt').textContent=(m.altitude()/1000).toFixed(2);$('speed').textContent=Math.hypot(b.vx,b.vy,b.vz).toFixed(0);$('thrust').textContent=(m.thrust/1000).toFixed(0);$('pressure').textContent=(m.q/1000).toFixed(2);$('mass').textContent=(m.mass/1000).toFixed(2);$('accel').textContent=(m.proper/CFG.g0).toFixed(2);
+ $('fuel1').style.width=(100*m.s1/CFG.stage1.prop)+'%';$('fuel2').style.width=(100*m.s2/CFG.stage2.prop)+'%';$('engineLabel').textContent=m.clamped?'CLAMPS ENGAGED · S1 '+m.mode1:'S1 '+m.mode1+' / S2 '+m.mode2;
+ const phase=m.complete?'SECO · mission complete':EVENTS[m.phase]+(paused?' · paused':!running?' · ready':'');if($('phase').textContent!==phase)$('phase').textContent=phase;
+ if(lastPhase!==m.phase){$('eventTitle').textContent=captions[m.phase][0];$('eventDetail').textContent=captions[m.phase][1];lastPhase=m.phase;}
+ if(m.phase===3)$('eventDetail').textContent='Peak '+(m.peakQ/1000).toFixed(2)+' kPa at '+stamp(m.peakT)+'. Throttle recovers as the atmosphere thins.';
+ if(m.complete){const o=m.cutoffOrbit,aps=(o.perigee/1000).toFixed(1)+' × '+(o.apogee/1000).toFixed(1)+' km';$('eventDetail').textContent=m.secoReason+'. '+(o.success?'Target orbit achieved.':'The stated circular target was not achieved.');$('status').textContent='Cutoff apsides: '+aps+' · Target 200 ±25 km. '+(o.bound?(o.perigee>100000?'Bound orbit above the atmosphere.':'Trajectory intersects the atmosphere.'):'Unbound escape trajectory.');}
+ else $('status').textContent='Target: 200 km circular · Both apsides within ±25 km. Peak Q: '+(m.peakQ/1000).toFixed(2)+' kPa.';
+ $('pause').textContent=paused?'Resume':'Pause';$('pause').disabled=!running;$('slow').textContent=performance.now()<slowUntil?'Rendering limit: playback slowed to stay responsive':'';
+}
+/* LIFECYCLE -----------------------------------------------------------------
+ Exactly one RAF chain. Reset mutates/reparents existing resources; no scene
+ rebuilding, texture creation, shader creation, event-handler accumulation or
+ new animation loops. Hidden tabs discard wall-time debt. A hard fixed-step
+ budget bounds catch-up; slow hardware slows simulated wall-time playback.
+*/
+function restoreComponents(){
+ upper.add(booster);booster.position.set(0,CFG.boosterY-CFG.upperY,0);booster.quaternion.identity();
+ upper.add(payload);payload.position.set(0,CFG.payloadY-CFG.upperY,0);payload.quaternion.identity();
+ for(let i=0;i<2;i++){upper.add(fairings[i]);fairings[i].position.set(i===0?1.1:-1.1,CFG.fairingY-CFG.upperY,0);fairings[i].quaternion.identity();fairings[i].visible=true;}
+ upper.position.set(0,0,0);upper.quaternion.identity();booster.visible=true;upper.visible=true;payload.visible=true;site.visible=true;strongback.rotation.z=0;for(const c of clamps)c.rotation.z=0;
+ glow1.emissiveIntensity=glow2.emissiveIntensity=0;engineLight.intensity=0;
+}
+function reset(start=false){
+ mission.reset();restoreComponents();plume.reset();accumulator=0;running=start;mission.started=start;paused=false;rate=1;lastNow=performance.now();lastUi=0;slowUntil=0;lastPhase=-1;dragging=false;
+ cameraOffset.set(98,-25,126);lookOffset.set(0,-16,0);cameraInitialized=false;cinematicMode();manualYaw=.65;manualPitch=.05;manualDistance=145;zoom=1;
+ shake=!reduced.matches;$('shake').textContent=shake?'Shake on':'Shake off';$('shake').setAttribute('aria-pressed',String(shake));
+ document.querySelectorAll('[data-rate]').forEach(e=>e.setAttribute('aria-pressed',String(e.dataset.rate==='1')));$('launch').textContent='Launch mission';$('launch').disabled=start;$('pause').disabled=!start;
+ refreshTimeline(mission);updateUI();render(1,0);
+}
+function launch(){if(mission.complete){reset(true);return;}if(!running){mission.started=true;running=true;paused=false;lastNow=performance.now();$('launch').disabled=true;updateUI();}}
+function togglePause(){if(!running)return;paused=!paused;lastNow=performance.now();updateUI();}
+function setRate(n){rate=n;document.querySelectorAll('[data-rate]').forEach(e=>e.setAttribute('aria-pressed',String(+e.dataset.rate===n)));}
+$('launch').onclick=launch;$('reset').onclick=()=>reset();$('pause').onclick=togglePause;$('cinematic').onclick=cinematicMode;
+$('shake').onclick=()=>{shake=!shake;$('shake').textContent=shake?'Shake on':'Shake off';$('shake').setAttribute('aria-pressed',String(shake));};
+reduced.addEventListener('change',()=>{if(reduced.matches){shake=false;$('shake').textContent='Shake off';$('shake').setAttribute('aria-pressed','false');}});
+document.querySelectorAll('[data-rate]').forEach(e=>e.onclick=()=>setRate(+e.dataset.rate));
+window.addEventListener('keydown',e=>{
+ if(e.target.matches('input,select,textarea')||e.ctrlKey||e.metaKey||e.altKey)return;
+ if(e.code==='Space'&&!e.target.matches('button,summary')){e.preventDefault();if(!running||mission.complete)launch();else togglePause();}
+ if(e.key.toLowerCase()==='r')reset();if(e.key.toLowerCase()==='c')cinematicMode();if(['1','4','0'].includes(e.key))setRate(e.key==='0'?10:+e.key);
+ if(e.key==='+'||e.key==='='){if(cinematic)zoom=clamp(zoom*.9,.55,3);else manualDistance=clamp(manualDistance*.9,25,500);}if(e.key==='-'){if(cinematic)zoom=clamp(zoom*1.1,.55,3);else manualDistance=clamp(manualDistance*1.1,25,500);}
+ if(e.target===canvas&&e.key.startsWith('Arrow')){e.preventDefault();manual();if(e.key==='ArrowLeft')manualYaw+=.08;if(e.key==='ArrowRight')manualYaw-=.08;if(e.key==='ArrowUp')manualPitch=clamp(manualPitch+.06,-.55,1.25);if(e.key==='ArrowDown')manualPitch=clamp(manualPitch-.06,-.55,1.25);}
+});
+$('verify').onclick=()=>{const button=$('verify');button.disabled=true;$('testOutput').textContent='Checking nine deterministic runs…';setTimeout(()=>{try{$('testOutput').textContent=verifyPhysics();}catch(e){$('testOutput').textContent='FAILED: '+e.message;console.error(e);}finally{button.disabled=false;lastNow=performance.now();}},20);};
+// Optional inspection UI is explicit and local: add #inspect to the file URL.
+// It runs the real integrator (and final 9 s of particles), then pauses. It is
+// not used by normal flight and does not fake event states or orbital results.
+if(location.hash==='#inspect'){
+ document.body.classList.add('inspection');const select=$('checkpoint');
+ for(const [name,value] of [['Prelaunch',-8],['Ignition hold',-1],['Liftoff',5],['Max-Q',64],['MECO',155.9],['Stage separation',159.8],['SES-1',165],['Fairing release',198.5],['SECO',518]]){const o=document.createElement('option');o.textContent=name;o.value=value;select.append(o);}
+ select.onchange=()=>{if(select.value==='')return;const until=+select.value;reset(true);while(mission.t+CFG.dt/2<until&&!mission.fault){mission.step();if(mission.t>until-9)plume.step(mission);}paused=true;accumulator=0;cameraInitialized=false;render(1,1);updateUI();lastNow=performance.now();};
+}
+window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setPixelRatio(Math.min(devicePixelRatio,CFG.pixelRatio));renderer.setSize(innerWidth,innerHeight);});
+document.addEventListener('visibilitychange',()=>{lastNow=performance.now();accumulator=0;});
+canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();lost=true;paused=true;fail('WebGL context lost','The flight has been paused. If the graphics context recovers, reset to continue; otherwise reload the application.');});
+canvas.addEventListener('webglcontextrestored',()=>{lost=false;$('message').hidden=true;reset();});
+function frame(now){
+ raf=requestAnimationFrame(frame);if(lost||document.hidden){lastNow=now;return;}
+ const elapsed=lastNow?Math.max(0,(now-lastNow)/1000):0;lastNow=now;const realDt=Math.min(.05,elapsed);
+ if(running&&!paused){accumulator+=Math.min(CFG.maxFrame,elapsed)*rate;let steps=0;
+  while(accumulator>=CFG.dt&&steps<CFG.maxSteps){
+   try{mission.step();plume.step(mission);}catch(e){mission.fault=e.message;console.error(e);}
+   accumulator-=CFG.dt;steps++;
+   if(mission.fault){paused=true;fail('Simulation stopped',mission.fault);break;}
+   if(mission.complete&&mission.t-mission.times[8]>=CFG.postflight){paused=true;break;}
+  }
+  if(steps===CFG.maxSteps&&accumulator>=CFG.dt){accumulator%=CFG.dt;slowUntil=now+1800;}
+  if(elapsed>CFG.maxFrame)slowUntil=now+1800;
+ }
+ const alpha=running&&!paused?clamp(accumulator/CFG.dt,0,1):1;
+ try{render(alpha,realDt);}catch(e){lost=true;console.error(e);fail('Rendering failed',e.message+' Reload to restart.');}
+ if(now-lastUi>100){updateUI();lastUi=now;}
+}
+// Force shader compilation before removing the loading overlay.
+renderer.debug.onShaderError=(gl,program,vs,fs)=>{lost=true;console.error(gl.getProgramInfoLog(program),gl.getShaderInfoLog(vs),gl.getShaderInfoLog(fs));fail('A graphics shader could not compile','This GPU or browser could not compile the simulation shaders. Enable hardware acceleration or try another WebGL-capable browser.');};
+renderer.compile(skyScene,skyCamera);renderer.compile(scene,camera);
+if(lost)return;
+document.querySelectorAll('button[data-rate],#launch,#reset,#cinematic,#shake').forEach(e=>e.disabled=false);
+reset();if(lost)return;$('message').hidden=true;raf=requestAnimationFrame(frame);
+window.addEventListener('pagehide',()=>{cancelAnimationFrame(raf);raf=0;});
+window.addEventListener('pageshow',e=>{if(e.persisted&&!raf){lastNow=performance.now();raf=requestAnimationFrame(frame);}});
+}
+</script>
+</body>
+</html>
