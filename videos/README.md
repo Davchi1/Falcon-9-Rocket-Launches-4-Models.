@@ -6,11 +6,30 @@ Format: MP4, H.264 High profile, 3840x2160, 60 fps, BT.709, no audio.
 
 | Video | Source page | Length | Size | Parts |
 |---|---|---|---|---|
+| `GPT-6-Sol_Falcon-_9_4K60.mp4` | `GPT-6-Sol_Falcon-_9.html` | 09:13 | 365 MB | 4 |
 | `Opus_5_Falcon_9_4K60.mp4` | `Opus_5_Falcon_9.html` | 09:37 | 630 MB | 7 |
 
 ## Joining the parts
 
 GitHub rejects files over 100 MB, so each video is split into 90 MiB parts. Download every `.partNN` file of a video into one folder (or clone this branch), then join them:
+
+### GPT-6-Sol_Falcon-_9_4K60.mp4
+
+macOS / Linux:
+
+```sh
+cat GPT-6-Sol_Falcon-_9_4K60.mp4.part* > GPT-6-Sol_Falcon-_9_4K60.mp4
+shasum -a 256 GPT-6-Sol_Falcon-_9_4K60.mp4   # should print b0b91a437d2608dad0640a53a7ff4d9aff5e4d232d475c1aeb077acf0f7cd470
+```
+
+Windows (Command Prompt):
+
+```bat
+copy /b GPT-6-Sol_Falcon-_9_4K60.mp4.part00 + GPT-6-Sol_Falcon-_9_4K60.mp4.part01 + GPT-6-Sol_Falcon-_9_4K60.mp4.part02 + GPT-6-Sol_Falcon-_9_4K60.mp4.part03 GPT-6-Sol_Falcon-_9_4K60.mp4
+certutil -hashfile GPT-6-Sol_Falcon-_9_4K60.mp4 SHA256
+```
+
+SHA-256: `b0b91a437d2608dad0640a53a7ff4d9aff5e4d232d475c1aeb077acf0f7cd470`
 
 ### Opus_5_Falcon_9_4K60.mp4
 

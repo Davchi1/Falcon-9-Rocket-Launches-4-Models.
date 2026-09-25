@@ -1,4 +1,16 @@
 {
+  "GPT-6-Sol_Falcon-_9_4K60": {
+    "bytes": 364572629,
+    "duration": "00:09:13.10",
+    "frames": 33186,
+    "parts": [
+      "GPT-6-Sol_Falcon-_9_4K60.mp4.part00",
+      "GPT-6-Sol_Falcon-_9_4K60.mp4.part01",
+      "GPT-6-Sol_Falcon-_9_4K60.mp4.part02",
+      "GPT-6-Sol_Falcon-_9_4K60.mp4.part03"
+    ],
+    "sha256": "b0b91a437d2608dad0640a53a7ff4d9aff5e4d232d475c1aeb077acf0f7cd470"
+  },
   "Opus_5_Falcon_9_4K60": {
     "bytes": 630357931,
     "duration": "00:09:37.10",
