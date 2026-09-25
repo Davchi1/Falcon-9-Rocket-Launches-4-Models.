@@ -1,0 +1,17 @@
+{
+  "Opus_5_Falcon_9_4K60": {
+    "bytes": 630357931,
+    "duration": "00:09:37.10",
+    "frames": 34626,
+    "parts": [
+      "Opus_5_Falcon_9_4K60.mp4.part00",
+      "Opus_5_Falcon_9_4K60.mp4.part01",
+      "Opus_5_Falcon_9_4K60.mp4.part02",
+      "Opus_5_Falcon_9_4K60.mp4.part03",
+      "Opus_5_Falcon_9_4K60.mp4.part04",
+      "Opus_5_Falcon_9_4K60.mp4.part05",
+      "Opus_5_Falcon_9_4K60.mp4.part06"
+    ],
+    "sha256": "1e1cf9a3a0c5d191f0b8f6498add463bf9fef5e341de9b2a250269b1d6dc3fd8"
+  }
+}
