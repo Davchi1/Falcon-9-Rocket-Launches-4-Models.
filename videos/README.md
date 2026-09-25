@@ -7,6 +7,7 @@ Format: MP4, H.264 High profile, 3840x2160, 60 fps, BT.709, no audio.
 | Video | Source page | Length | Size | Parts |
 |---|---|---|---|---|
 | `GPT-6-Sol_Falcon-_9_4K60.mp4` | `GPT-6-Sol_Falcon-_9.html` | 09:13 | 365 MB | 4 |
+| `GPT-6_Astra_Falcon_9_4K60.mp4` | `GPT-6_Astra_Falcon_9.html` | 09:08 | 936 MB | 10 |
 | `Opus_5_Falcon_9_4K60.mp4` | `Opus_5_Falcon_9.html` | 09:37 | 630 MB | 7 |
 
 ## Joining the parts
@@ -30,6 +31,24 @@ certutil -hashfile GPT-6-Sol_Falcon-_9_4K60.mp4 SHA256
 ```
 
 SHA-256: `b0b91a437d2608dad0640a53a7ff4d9aff5e4d232d475c1aeb077acf0f7cd470`
+
+### GPT-6_Astra_Falcon_9_4K60.mp4
+
+macOS / Linux:
+
+```sh
+cat GPT-6_Astra_Falcon_9_4K60.mp4.part* > GPT-6_Astra_Falcon_9_4K60.mp4
+shasum -a 256 GPT-6_Astra_Falcon_9_4K60.mp4   # should print 35a8d0bb82dbc3bec3c3c13fd7dde202f79e2a3bbbad0e3eaeae976161a54b00
+```
+
+Windows (Command Prompt):
+
+```bat
+copy /b GPT-6_Astra_Falcon_9_4K60.mp4.part00 + GPT-6_Astra_Falcon_9_4K60.mp4.part01 + GPT-6_Astra_Falcon_9_4K60.mp4.part02 + GPT-6_Astra_Falcon_9_4K60.mp4.part03 + GPT-6_Astra_Falcon_9_4K60.mp4.part04 + GPT-6_Astra_Falcon_9_4K60.mp4.part05 + GPT-6_Astra_Falcon_9_4K60.mp4.part06 + GPT-6_Astra_Falcon_9_4K60.mp4.part07 + GPT-6_Astra_Falcon_9_4K60.mp4.part08 + GPT-6_Astra_Falcon_9_4K60.mp4.part09 GPT-6_Astra_Falcon_9_4K60.mp4
+certutil -hashfile GPT-6_Astra_Falcon_9_4K60.mp4 SHA256
+```
+
+SHA-256: `35a8d0bb82dbc3bec3c3c13fd7dde202f79e2a3bbbad0e3eaeae976161a54b00`
 
 ### Opus_5_Falcon_9_4K60.mp4
 
