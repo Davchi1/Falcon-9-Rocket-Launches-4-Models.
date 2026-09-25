@@ -11,7 +11,18 @@ Format: MP4, H.264 High profile, 3840x2160, 60 fps, BT.709, no audio.
 | `Opus_5.5_Falcon_9_4K60.mp4` | `Opus_5.5_Falcon_9.html` | 08:20 | 1303 MB | 14 |
 | `Opus_5_Falcon_9_4K60.mp4` | `Opus_5_Falcon_9.html` | 09:37 | 630 MB | 7 |
 
-## Joining the parts
+## Get one MP4 per video (quickest way)
+
+GitHub rejects single files over 100 MB, so each video is stored here as 90 MiB `.partNN` pieces. Joining them gives back the exact original MP4 (checked with the SHA-256 values below).
+
+1. On GitHub, switch to this branch, then **Code → Download ZIP** (about 3.2 GB), and unzip it.
+2. Open the `videos` folder and run the join script:
+   - **Windows:** double-click `join_videos.bat`
+   - **macOS / Linux:** in a terminal in that folder, run `sh join_videos.sh`
+3. You now have one `.mp4` per launch in the same folder. The `.partNN` files can be deleted.
+
+
+## Joining the parts by hand
 
 GitHub rejects files over 100 MB, so each video is split into 90 MiB parts. Download every `.partNN` file of a video into one folder (or clone this branch), then join them:
 
